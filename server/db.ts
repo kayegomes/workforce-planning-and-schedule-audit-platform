@@ -1,6 +1,8 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, runs, escalas, eventos, alertasConflito, alertasFolga, alertasDeslocamento, qualidadeDados } from "../drizzle/schema";
+import type { ProcessedEscala } from "./etl";
+import type { ConflictAlert, FolgaAlert, DeslocamentoAlert, QualidadeIssue } from "./rules";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +91,255 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+/**
+ * Create a new run record
+ */
+export async function createRun(userId: number, file2468Key: string, file2020Key: string, file2468Url: string, file2020Url: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(runs).values({
+    userId,
+    status: "pending",
+    file2468Key,
+    file2020Key,
+    file2468Url,
+    file2020Url,
+  });
+
+  return Number(result[0].insertId);
+}
+
+/**
+ * Update run status
+ */
+export async function updateRunStatus(
+  runId: number,
+  status: "processing" | "completed" | "failed",
+  errorMessage?: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const updateData: any = { status };
+  
+  if (status === "completed" || status === "failed") {
+    updateData.completedAt = new Date();
+  }
+  
+  if (errorMessage) {
+    updateData.errorMessage = errorMessage;
+  }
+
+  await db.update(runs).set(updateData).where(eq(runs.id, runId));
+}
+
+/**
+ * Update run statistics
+ */
+export async function updateRunStats(
+  runId: number,
+  stats: {
+    totalEscalas: number;
+    totalEventos: number;
+    totalConflitos: number;
+    totalViolacoesFolga: number;
+    totalRiscosDeslocamento: number;
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(runs).set(stats).where(eq(runs.id, runId));
+}
+
+/**
+ * Save escalas to database
+ */
+export async function saveEscalas(runId: number, escalasData: ProcessedEscala[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  if (escalasData.length === 0) return [];
+
+  const values = escalasData.map(e => ({
+    runId,
+    pessoa: e.pessoa,
+    funcao: e.funcao,
+    tipoItem: e.tipoItem,
+    descricaoItem: e.descricaoItem,
+    status: e.status,
+    canal: e.canal,
+    cliente: e.cliente,
+    eventoPrograma: e.eventoPrograma,
+    wo: e.wo,
+    data: e.data,
+    inicioDt: e.inicioDt,
+    fimDt: e.fimDt,
+    duracaoHoras: e.duracaoHoras.toFixed(2),
+    cidade: e.cidade,
+    uf: e.uf,
+    local: e.local,
+    ehFolga: e.ehFolga,
+    ehViagem: e.ehViagem,
+    ano: e.ano,
+    mes: e.mes,
+    semanaIso: e.semanaIso,
+    diaSemana: e.diaSemana,
+  }));
+
+  const result = await db.insert(escalas).values(values);
+  const firstId = Number(result[0].insertId);
+  
+  // Return array of IDs
+  return escalasData.map((_, index) => firstId + index);
+}
+
+/**
+ * Save eventos to database
+ */
+export async function saveEventos(runId: number, eventosData: Array<{ wo: string; data: Date; tipoEvento: string | null; produto: string | null; canal: string | null; cidade: string | null; uf: string | null; local: string | null; tipoProducao: string | null }>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  if (eventosData.length === 0) return;
+
+  const values = eventosData.map(e => ({
+    runId,
+    wo: e.wo,
+    data: e.data,
+    tipoEvento: e.tipoEvento,
+    produto: e.produto,
+    canal: e.canal,
+    cidade: e.cidade,
+    uf: e.uf,
+    local: e.local,
+    tipoProducao: e.tipoProducao,
+  }));
+
+  await db.insert(eventos).values(values);
+}
+
+/**
+ * Save conflict alerts to database
+ */
+export async function saveConflictAlerts(runId: number, conflicts: ConflictAlert[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  if (conflicts.length === 0) return;
+
+  const values = conflicts.map(c => ({
+    runId,
+    pessoa: c.pessoa,
+    data: c.data,
+    escalaId1: c.escalaId1,
+    escalaId2: c.escalaId2,
+    inicio1: c.inicio1,
+    fim1: c.fim1,
+    inicio2: c.inicio2,
+    fim2: c.fim2,
+    overlapMinutos: c.overlapMinutos,
+    evento1: c.evento1,
+    evento2: c.evento2,
+    cidade1: c.cidade1,
+    cidade2: c.cidade2,
+  }));
+
+  await db.insert(alertasConflito).values(values);
+}
+
+/**
+ * Save folga violation alerts to database
+ */
+export async function saveFolgaAlerts(runId: number, violations: FolgaAlert[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  if (violations.length === 0) return;
+
+  const values = violations.map(v => ({
+    runId,
+    pessoa: v.pessoa,
+    data: v.data,
+    tipoFolga: v.tipoFolga,
+    escalaIdFolga: v.escalaIdFolga,
+    escalaIdConflitante: v.escalaIdConflitante,
+    duracaoHoras: v.duracaoHoras.toFixed(2),
+    status: v.status,
+    eventoPrograma: v.eventoPrograma,
+  }));
+
+  await db.insert(alertasFolga).values(values);
+}
+
+/**
+ * Save deslocamento risk alerts to database
+ */
+export async function saveDeslocamentoAlerts(runId: number, risks: DeslocamentoAlert[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  if (risks.length === 0) return;
+
+  const values = risks.map(r => ({
+    runId,
+    pessoa: r.pessoa,
+    escalaIdPrev: r.escalaIdPrev,
+    escalaIdNext: r.escalaIdNext,
+    dataPrev: r.dataPrev,
+    dataNext: r.dataNext,
+    cidadePrev: r.cidadePrev,
+    cidadeNext: r.cidadeNext,
+    fimPrev: r.fimPrev,
+    inicioNext: r.inicioNext,
+    gapHoras: r.gapHoras.toFixed(2),
+    gapMinimo: r.gapMinimo.toFixed(2),
+    status: r.status,
+  }));
+
+  await db.insert(alertasDeslocamento).values(values);
+}
+
+/**
+ * Save quality issues to database
+ */
+export async function saveQualityIssues(runId: number, issues: QualidadeIssue[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  if (issues.length === 0) return;
+
+  const values = issues.map(i => ({
+    runId,
+    tipo: i.tipo,
+    descricao: i.descricao,
+    pessoa: i.pessoa,
+    data: i.data,
+    wo: i.wo,
+    dadosOriginais: i.dadosOriginais,
+  }));
+
+  await db.insert(qualidadeDados).values(values);
+}
+
+/**
+ * Get runs for a user
+ */
+export async function getRunsByUser(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db.select().from(runs).where(eq(runs.userId, userId)).orderBy(runs.createdAt);
+}
+
+/**
+ * Get run by ID
+ */
+export async function getRunById(runId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.select().from(runs).where(eq(runs.id, runId)).limit(1);
+  return result[0];
+}
