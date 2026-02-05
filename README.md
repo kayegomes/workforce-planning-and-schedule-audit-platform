@@ -193,8 +193,8 @@ pnpm db:push
 
 ## 🤝 Suporte
 
-Para dúvidas ou problemas, entre em contato através do sistema Manus.
+
 
 ---
 
-**Desenvolvido com ❤️ para otimizar o planejamento de escalas**
+
