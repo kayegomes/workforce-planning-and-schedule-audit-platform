@@ -9,6 +9,8 @@ import Dashboard from "./pages/Dashboard";
 import Conflicts from "./pages/Conflicts";
 import FolgaViolations from "./pages/FolgaViolations";
 import DeslocamentoRisks from "./pages/DeslocamentoRisks";
+import InterjornadaAlerts from "./pages/InterjornadaAlerts";
+import PersonProfile from "./pages/PersonProfile";
 
 function Router() {
   return (
@@ -18,6 +20,8 @@ function Router() {
       <Route path={"/conflicts/:runId"} component={Conflicts} />
       <Route path={"/folga/:runId"} component={FolgaViolations} />
       <Route path={"/deslocamento/:runId"} component={DeslocamentoRisks} />
+      <Route path={"/interjornada/:runId"} component={InterjornadaAlerts} />
+      <Route path={"/profile/:runId"} component={PersonProfile} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

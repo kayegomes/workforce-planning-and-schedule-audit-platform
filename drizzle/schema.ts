@@ -34,6 +34,8 @@ export const runs = mysqlTable("runs", {
   totalConflitos: int("totalConflitos").default(0),
   totalViolacoesFolga: int("totalViolacoesFolga").default(0),
   totalRiscosDeslocamento: int("totalRiscosDeslocamento").default(0),
+  totalInterjornada: int("totalInterjornada").default(0),
+  totalViagens: int("totalViagens").default(0),
   errorMessage: text("errorMessage"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   completedAt: timestamp("completedAt"),
@@ -209,3 +211,119 @@ export const qualidadeDados = mysqlTable("qualidade_dados", {
 
 export type QualidadeDado = typeof qualidadeDados.$inferSelect;
 export type InsertQualidadeDado = typeof qualidadeDados.$inferInsert;
+
+/**
+ * Alertas Interjornada table - insufficient rest between activities (< 11h)
+ */
+export const alertasInterjornada = mysqlTable("alertas_interjornada", {
+  id: int("id").autoincrement().primaryKey(),
+  runId: int("runId").notNull(),
+  pessoa: varchar("pessoa", { length: 255 }).notNull(),
+  escalaIdPrev: int("escalaIdPrev").notNull(),
+  escalaIdNext: int("escalaIdNext").notNull(),
+  dataPrev: timestamp("dataPrev").notNull(),
+  dataNext: timestamp("dataNext").notNull(),
+  fimPrev: timestamp("fimPrev").notNull(),
+  inicioNext: timestamp("inicioNext").notNull(),
+  descansoHoras: decimal("descansoHoras", { precision: 10, scale: 2 }),
+  descansoMinimo: decimal("descansoMinimo", { precision: 10, scale: 2 }).default("11.00"),
+  eventoPrev: text("eventoPrev"),
+  eventoNext: text("eventoNext"),
+  status: varchar("status", { length: 100 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  runIdIdx: index("runId_idx").on(table.runId),
+  pessoaIdx: index("pessoa_idx").on(table.pessoa),
+}));
+
+export type AlertaInterjornada = typeof alertasInterjornada.$inferSelect;
+export type InsertAlertaInterjornada = typeof alertasInterjornada.$inferInsert;
+
+/**
+ * Viagens table - tracks travel between cities
+ */
+export const viagens = mysqlTable("viagens", {
+  id: int("id").autoincrement().primaryKey(),
+  runId: int("runId").notNull(),
+  pessoa: varchar("pessoa", { length: 255 }).notNull(),
+  escalaIdOrigem: int("escalaIdOrigem").notNull(),
+  escalaIdDestino: int("escalaIdDestino").notNull(),
+  cidadeOrigem: varchar("cidadeOrigem", { length: 255 }),
+  cidadeDestino: varchar("cidadeDestino", { length: 255 }),
+  dataOrigem: timestamp("dataOrigem").notNull(),
+  dataDestino: timestamp("dataDestino").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  runIdIdx: index("runId_idx").on(table.runId),
+  pessoaIdx: index("pessoa_idx").on(table.pessoa),
+}));
+
+export type Viagem = typeof viagens.$inferSelect;
+export type InsertViagem = typeof viagens.$inferInsert;
+
+/**
+ * Grades table - event schedules for coverage analysis
+ */
+export const grades = mysqlTable("grades", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  nome: varchar("nome", { length: 255 }).notNull(),
+  fileKey: text("fileKey"),
+  fileUrl: text("fileUrl"),
+  dataInicio: timestamp("dataInicio"),
+  dataFim: timestamp("dataFim"),
+  totalEventos: int("totalEventos").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("userId_idx").on(table.userId),
+}));
+
+export type Grade = typeof grades.$inferSelect;
+export type InsertGrade = typeof grades.$inferInsert;
+
+/**
+ * Analise Grades table - coverage analysis results
+ */
+export const analiseGrades = mysqlTable("analise_grades", {
+  id: int("id").autoincrement().primaryKey(),
+  gradeId: int("gradeId").notNull(),
+  runId: int("runId"), // Optional: link to a specific run for folgas/ferias data
+  funcao: varchar("funcao", { length: 255 }).notNull(), // e.g., "Narrador"
+  totalEventos: int("totalEventos").default(0),
+  eventosSemCobertura: int("eventosSemCobertura").default(0),
+  eventosComCobertura: int("eventosComCobertura").default(0),
+  totalProfissionais: int("totalProfissionais").default(0),
+  profissionaisDisponiveis: int("profissionaisDisponiveis").default(0),
+  profissionaisEmFolga: int("profissionaisEmFolga").default(0),
+  profissionaisEmExcecao: int("profissionaisEmExcecao").default(0),
+  resultado: mysqlEnum("resultado", ["suficiente", "insuficiente", "critico"]).notNull(),
+  recomendacoes: text("recomendacoes"),
+  detalhes: text("detalhes"), // JSON string with detailed analysis
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  gradeIdIdx: index("gradeId_idx").on(table.gradeId),
+  runIdIdx: index("runId_idx").on(table.runId),
+}));
+
+export type AnaliseGrade = typeof analiseGrades.$inferSelect;
+export type InsertAnaliseGrade = typeof analiseGrades.$inferInsert;
+
+/**
+ * Excecoes Profissionais table - exceptions like maternity leave
+ */
+export const excecoesProfissionais = mysqlTable("excecoes_profissionais", {
+  id: int("id").autoincrement().primaryKey(),
+  gradeId: int("gradeId").notNull(),
+  pessoa: varchar("pessoa", { length: 255 }).notNull(),
+  tipo: varchar("tipo", { length: 100 }).notNull(), // licenca_maternidade, licenca_medica, etc
+  dataInicio: timestamp("dataInicio").notNull(),
+  dataFim: timestamp("dataFim").notNull(),
+  observacoes: text("observacoes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  gradeIdIdx: index("gradeId_idx").on(table.gradeId),
+  pessoaIdx: index("pessoa_idx").on(table.pessoa),
+}));
+
+export type ExcecaoProfissional = typeof excecoesProfissionais.$inferSelect;
+export type InsertExcecaoProfissional = typeof excecoesProfissionais.$inferInsert;

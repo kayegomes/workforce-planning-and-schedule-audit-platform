@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, runs, escalas, eventos, alertasConflito, alertasFolga, alertasDeslocamento, qualidadeDados } from "../drizzle/schema";
+import { InsertUser, users, runs, escalas, eventos, alertasConflito, alertasFolga, alertasDeslocamento, alertasInterjornada, viagens, qualidadeDados } from "../drizzle/schema";
 import type { ProcessedEscala } from "./etl";
-import type { ConflictAlert, FolgaAlert, DeslocamentoAlert, QualidadeIssue } from "./rules";
+import type { ConflictAlert, FolgaAlert, DeslocamentoAlert, InterjornadaAlert, ViagemDetected, QualidadeIssue } from "./rules";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -145,6 +145,8 @@ export async function updateRunStats(
     totalConflitos: number;
     totalViolacoesFolga: number;
     totalRiscosDeslocamento: number;
+    totalInterjornada: number;
+    totalViagens: number;
   }
 ) {
   const db = await getDb();
@@ -342,4 +344,55 @@ export async function getRunById(runId: number) {
 
   const result = await db.select().from(runs).where(eq(runs.id, runId)).limit(1);
   return result[0];
+}
+
+/**
+ * Save interjornada violation alerts to database
+ */
+export async function saveInterjornadaAlerts(runId: number, violations: InterjornadaAlert[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  if (violations.length === 0) return;
+
+  const values = violations.map(v => ({
+    runId,
+    pessoa: v.pessoa,
+    escalaIdPrev: v.escalaIdPrev,
+    escalaIdNext: v.escalaIdNext,
+    dataPrev: v.dataPrev,
+    dataNext: v.dataNext,
+    fimPrev: v.fimPrev,
+    inicioNext: v.inicioNext,
+    descansoHoras: v.descansoHoras.toFixed(2),
+    descansoMinimo: v.descansoMinimo.toFixed(2),
+    eventoPrev: v.eventoPrev,
+    eventoNext: v.eventoNext,
+    status: v.status,
+  }));
+
+  await db.insert(alertasInterjornada).values(values);
+}
+
+/**
+ * Save detected viagens to database
+ */
+export async function saveViagens(runId: number, viagensData: ViagemDetected[]) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  if (viagensData.length === 0) return;
+
+  const values = viagensData.map(v => ({
+    runId,
+    pessoa: v.pessoa,
+    escalaIdOrigem: v.escalaIdOrigem,
+    escalaIdDestino: v.escalaIdDestino,
+    cidadeOrigem: v.cidadeOrigem,
+    cidadeDestino: v.cidadeDestino,
+    dataOrigem: v.dataOrigem,
+    dataDestino: v.dataDestino,
+  }));
+
+  await db.insert(viagens).values(values);
 }

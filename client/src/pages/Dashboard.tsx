@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
-import { AlertTriangle, Clock, UserX, TrendingUp, ArrowLeft, Loader2 } from "lucide-react";
+import { AlertTriangle, Clock, UserX, TrendingUp, ArrowLeft, Loader2, Moon, Plane } from "lucide-react";
 import { useParams, useLocation } from "wouter";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
@@ -69,6 +69,9 @@ export default function Dashboard() {
               <Button variant="outline" onClick={() => setLocation(`/folga/${runId}`)}>
                 Ver Violações de Folga
               </Button>
+              <Button variant="outline" onClick={() => setLocation(`/interjornada/${runId}`)}>
+                Ver Interjornada
+              </Button>
               <Button variant="outline" onClick={() => setLocation(`/deslocamento/${runId}`)}>
                 Ver Riscos de Deslocamento
               </Button>
@@ -88,6 +91,17 @@ export default function Dashboard() {
             <CardContent>
               <div className="text-2xl font-bold">{stats?.totalHorasAtividades.toFixed(0) || 0}h</div>
               <p className="text-xs text-muted-foreground">Total de horas de trabalho</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Eventos</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats?.totalEventos || 0}</div>
+              <p className="text-xs text-muted-foreground">Eventos únicos</p>
             </CardContent>
           </Card>
 
@@ -132,6 +146,28 @@ export default function Dashboard() {
             <CardContent>
               <div className="text-2xl font-bold text-yellow-600">{stats?.totalRiscosDeslocamento || 0}</div>
               <p className="text-xs text-muted-foreground">Gap insuficiente entre cidades</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Alertas Interjornada</CardTitle>
+              <Moon className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">{stats?.totalInterjornada || 0}</div>
+              <p className="text-xs text-muted-foreground">Descanso menor que 11h</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Viagens</CardTitle>
+              <Plane className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">{stats?.totalViagens || 0}</div>
+              <p className="text-xs text-muted-foreground">Mudanças de cidade</p>
             </CardContent>
           </Card>
         </div>

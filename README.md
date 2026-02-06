@@ -28,14 +28,27 @@ Sistema web completo para gestão e auditoria de escalas de trabalho com detecç
 - Gap mínimo configurável (padrão: 3 horas)
 - Rastreamento de origem/destino e horários
 
+#### 4. Alertas de Interjornada
+- Detecta descanso insuficiente entre atividades (< 11 horas)
+- Calcula tempo de descanso real entre fim e início de atividades
+- Identifica violações de normas trabalhistas
+
+#### 5. Rastreamento de Viagens
+- Detecta automaticamente mudanças de cidade
+- Rastreia origem, destino e datas de viagem
+- Quantifica volume de deslocamentos por pessoa
+
 ### Dashboard Executivo
 
 #### KPIs
 - **Horas Atividades:** Total de horas de trabalho
+- **Total Eventos:** Eventos únicos processados
 - **Total Atividades:** Número de atividades processadas
 - **Alertas Conflito:** Sobreposições detectadas
 - **Alertas Folga:** Violações de folga
 - **Alertas Deslocamento:** Riscos de deslocamento
+- **Alertas Interjornada:** Descanso insuficiente (< 11h)
+- **Total Viagens:** Mudanças de cidade detectadas
 
 #### Visualizações
 - **Conflitos por Semana:** Tendência de conflitos (gráfico de linha)
@@ -50,6 +63,21 @@ Sistema web completo para gestão e auditoria de escalas de trabalho com detecç
 - Tabelas detalhadas com todos os alertas detectados
 - Filtros por pessoa, data, canal e função
 - Exportação de dados (futuro)
+
+### Perfil Individual
+- Estatísticas de desempenho por pessoa
+- Histórico completo de atividades
+- Contadores de alertas (conflitos, folgas, deslocamento, interjornada)
+- Total de viagens realizadas
+- Timeline de atividades com detalhes
+
+### Análise de Grades
+- Upload de grade de eventos futuros
+- Cálculo de suficiência de narradores
+- Consideração de férias e folgas
+- Input de exceções (licença maternidade, médica, etc.)
+- Resultado: suficiente, insuficiente ou crítico
+- Recomendações de ajuste de equipe
 
 ## 🏗️ Arquitetura
 
@@ -75,6 +103,11 @@ Sistema web completo para gestão e auditoria de escalas de trabalho com detecç
 - `alertas_conflito` - Conflitos de horário
 - `alertas_folga` - Violações de folga
 - `alertas_deslocamento` - Riscos de deslocamento
+- `alertas_interjornada` - Violações de interjornada (< 11h)
+- `viagens` - Rastreamento de mudanças de cidade
+- `grades` - Grades de eventos futuros
+- `analise_grades` - Resultados de análise de suficiência
+- `excecoes_profissionais` - Exceções (licenças, etc.)
 - `qualidade_dados` - Problemas de qualidade de dados
 
 ## 🚀 Como Usar
@@ -125,6 +158,23 @@ E gap entre fim de A e início de B < 3 horas
 ENTÃO gerar alerta de risco de deslocamento
 ```
 
+### Interjornada
+```
+SE pessoa tem atividade A que termina em T1
+E pessoa tem atividade B que começa em T2
+E (T2 - T1) < 11 horas
+ENTÃO gerar alerta de interjornada
+```
+
+### Viagem
+```
+SE pessoa tem atividade A na cidade X
+E pessoa tem atividade B na cidade Y
+E X ≠ Y
+E B ocorre após A
+ENTÃO registrar viagem de X para Y
+```
+
 ## 🧪 Testes
 
 Execute os testes com:
@@ -138,7 +188,11 @@ Cobertura de testes:
 - ✅ Detecção de conflitos
 - ✅ Detecção de violações de folga
 - ✅ Detecção de riscos de deslocamento
+- ✅ Detecção de interjornada
+- ✅ Detecção de viagens
 - ✅ Autenticação e logout
+
+**Total: 18 testes passando**
 
 ## 📝 Formato das Planilhas
 
@@ -182,9 +236,12 @@ pnpm db:push
 
 ## 📈 Roadmap Futuro
 
-- [ ] Página de detalhes por pessoa (drill-down)
+- [ ] Visão macro (agregação multi-run)
+- [ ] Filtros avançados de período, canal e função
+- [ ] Página de análise de grades (frontend)
+- [ ] Gráficos de eventos por tipo
+- [ ] Gráficos de viagens por destino
 - [ ] Exportação de alertas para Excel/CSV
-- [ ] Filtros avançados (por canal, função, status)
 - [ ] Configuração de gap mínimo por rota
 - [ ] Notificações por e-mail
 - [ ] Integração com Microsoft Teams

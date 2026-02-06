@@ -296,3 +296,134 @@ export function detectQualityIssues(
   
   return issues;
 }
+
+export interface InterjornadaAlert {
+  pessoa: string;
+  escalaIdPrev: number;
+  escalaIdNext: number;
+  dataPrev: Date;
+  dataNext: Date;
+  fimPrev: Date;
+  inicioNext: Date;
+  descansoHoras: number;
+  descansoMinimo: number;
+  eventoPrev: string | null;
+  eventoNext: string | null;
+  status: string | null;
+}
+
+export interface ViagemDetected {
+  pessoa: string;
+  escalaIdOrigem: number;
+  escalaIdDestino: number;
+  cidadeOrigem: string;
+  cidadeDestino: string;
+  dataOrigem: Date;
+  dataDestino: Date;
+}
+
+/**
+ * Detect insufficient rest between activities (interjornada < 11h)
+ */
+export function detectInterjornadaViolations(
+  escalas: Array<ProcessedEscala & { id: number }>,
+  minRestHours: number = 11
+): InterjornadaAlert[] {
+  const violations: InterjornadaAlert[] = [];
+  
+  // Group by person
+  const byPerson = new Map<string, Array<ProcessedEscala & { id: number }>>();
+  
+  for (const escala of escalas) {
+    // Only consider work activities (not time off)
+    if (!escala.ehFolga) {
+      if (!byPerson.has(escala.pessoa)) {
+        byPerson.set(escala.pessoa, []);
+      }
+      byPerson.get(escala.pessoa)!.push(escala);
+    }
+  }
+  
+  // Check consecutive activities for insufficient rest
+  for (const [pessoa, activities] of Array.from(byPerson.entries())) {
+    // Sort by end time
+    activities.sort((a, b) => a.fimDt.getTime() - b.fimDt.getTime());
+    
+    for (let i = 0; i < activities.length - 1; i++) {
+      const prev = activities[i];
+      const next = activities[i + 1];
+      
+      // Calculate rest time in hours
+      const restMs = next.inicioDt.getTime() - prev.fimDt.getTime();
+      const restHours = restMs / (1000 * 60 * 60);
+      
+      // If rest is less than minimum, it's a violation
+      if (restHours < minRestHours && restHours >= 0) {
+        violations.push({
+          pessoa,
+          escalaIdPrev: prev.id,
+          escalaIdNext: next.id,
+          dataPrev: prev.data,
+          dataNext: next.data,
+          fimPrev: prev.fimDt,
+          inicioNext: next.inicioDt,
+          descansoHoras: Math.max(0, restHours),
+          descansoMinimo: minRestHours,
+          eventoPrev: prev.eventoPrograma,
+          eventoNext: next.eventoPrograma,
+          status: next.status,
+        });
+      }
+    }
+  }
+  
+  return violations;
+}
+
+/**
+ * Detect travels (city changes between consecutive activities)
+ */
+export function detectViagens(
+  escalas: Array<ProcessedEscala & { id: number }>
+): ViagemDetected[] {
+  const viagens: ViagemDetected[] = [];
+  
+  // Group by person
+  const byPerson = new Map<string, Array<ProcessedEscala & { id: number }>>();
+  
+  for (const escala of escalas) {
+    // Only consider work activities with known cities
+    if (!escala.ehFolga && escala.cidade) {
+      if (!byPerson.has(escala.pessoa)) {
+        byPerson.set(escala.pessoa, []);
+      }
+      byPerson.get(escala.pessoa)!.push(escala);
+    }
+  }
+  
+  // Check consecutive activities for city changes
+  for (const [pessoa, activities] of Array.from(byPerson.entries())) {
+    // Sort by date and start time
+    activities.sort((a, b) => a.inicioDt.getTime() - b.inicioDt.getTime());
+    
+    for (let i = 0; i < activities.length - 1; i++) {
+      const origem = activities[i];
+      const destino = activities[i + 1];
+      
+      // If cities are different, it's a travel
+      if (origem.cidade && destino.cidade && origem.cidade !== destino.cidade) {
+        viagens.push({
+          pessoa,
+          escalaIdOrigem: origem.id,
+          escalaIdDestino: destino.id,
+          cidadeOrigem: origem.cidade,
+          cidadeDestino: destino.cidade,
+          dataOrigem: origem.data,
+          dataDestino: destino.data,
+        });
+      }
+    }
+  }
+  
+  return viagens;
+}

@@ -12,6 +12,8 @@ import {
   saveConflictAlerts,
   saveFolgaAlerts,
   saveDeslocamentoAlerts,
+  saveInterjornadaAlerts,
+  saveViagens,
   saveQualityIssues,
   getRunsByUser,
   getRunById,
@@ -19,8 +21,8 @@ import {
 } from "./db";
 import { storagePut } from "./storage";
 import { parseExcelFile, processAtividades, processEventos, mergeEscalasWithEventos } from "./etl";
-import { detectConflicts, detectFolgaViolations, detectDeslocamentoRisks, detectQualityIssues } from "./rules";
-import { runs, escalas, alertasConflito, alertasFolga, alertasDeslocamento } from "../drizzle/schema";
+import { detectConflicts, detectFolgaViolations, detectDeslocamentoRisks, detectInterjornadaViolations, detectViagens, detectQualityIssues } from "./rules";
+import { runs, escalas, alertasConflito, alertasFolga, alertasDeslocamento, alertasInterjornada, viagens, grades, analiseGrades, excecoesProfissionais } from "../drizzle/schema";
 import { eq, desc, and, sql } from "drizzle-orm";
 
 export const appRouter = router({
@@ -134,12 +136,16 @@ export const appRouter = router({
           const conflicts = detectConflicts(escalasWithIds);
           const folgaViolations = detectFolgaViolations(escalasWithIds);
           const deslocamentoRisks = detectDeslocamentoRisks(escalasWithIds, 3); // 3 hours minimum gap
+          const interjornadaViolations = detectInterjornadaViolations(escalasWithIds, 11); // 11 hours minimum rest
+          const viagensDetected = detectViagens(escalasWithIds);
           const qualityIssues = detectQualityIssues(mergedEscalas);
 
           // Save alerts
           await saveConflictAlerts(runId, conflicts);
           await saveFolgaAlerts(runId, folgaViolations);
           await saveDeslocamentoAlerts(runId, deslocamentoRisks);
+          await saveInterjornadaAlerts(runId, interjornadaViolations);
+          await saveViagens(runId, viagensDetected);
           await saveQualityIssues(runId, qualityIssues);
 
           // Update run stats
@@ -149,6 +155,8 @@ export const appRouter = router({
             totalConflitos: conflicts.length,
             totalViolacoesFolga: folgaViolations.length,
             totalRiscosDeslocamento: deslocamentoRisks.length,
+            totalInterjornada: interjornadaViolations.length,
+            totalViagens: viagensDetected.length,
           });
 
           await updateRunStatus(runId, "completed");
@@ -161,6 +169,8 @@ export const appRouter = router({
               totalConflitos: conflicts.length,
               totalViolacoesFolga: folgaViolations.length,
               totalRiscosDeslocamento: deslocamentoRisks.length,
+              totalInterjornada: interjornadaViolations.length,
+              totalViagens: viagensDetected.length,
             },
           };
         } catch (error) {
@@ -221,6 +231,8 @@ export const appRouter = router({
           totalConflitos: run.totalConflitos || 0,
           totalViolacoesFolga: run.totalViolacoesFolga || 0,
           totalRiscosDeslocamento: run.totalRiscosDeslocamento || 0,
+          totalInterjornada: run.totalInterjornada || 0,
+          totalViagens: run.totalViagens || 0,
           totalHorasAtividades,
         };
       }),
@@ -448,6 +460,358 @@ export const appRouter = router({
           .limit(input.limit)
           .offset(input.offset);
         return results;
+      }),
+
+    /**
+     * Get interjornada violation alerts with filters
+     */
+    getInterjornadaViolations: protectedProcedure
+      .input(z.object({
+        runId: z.number(),
+        pessoa: z.string().optional(),
+        limit: z.number().default(100),
+        offset: z.number().default(0),
+      }))
+      .query(async ({ ctx, input }) => {
+        const run = await getRunById(input.runId);
+        if (!run || run.userId !== ctx.user.id) {
+          throw new Error("Run not found");
+        }
+
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const conditions = [eq(alertasInterjornada.runId, input.runId)];
+        
+        if (input.pessoa) {
+          conditions.push(eq(alertasInterjornada.pessoa, input.pessoa));
+        }
+
+        const results = await db.select().from(alertasInterjornada)
+          .where(and(...conditions))
+          .limit(input.limit)
+          .offset(input.offset);
+        return results;
+      }),
+  }),
+
+  profile: router({
+    /**
+     * Get person profile with stats
+     */
+    getPersonProfile: protectedProcedure
+      .input(z.object({
+        runId: z.number(),
+        pessoa: z.string(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const run = await getRunById(input.runId);
+        if (!run || run.userId !== ctx.user.id) {
+          throw new Error("Run not found");
+        }
+
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        // Get total hours and activities
+        const hoursResult = await db
+          .select({ 
+            total: sql<number>`SUM(${escalas.duracaoHoras})`,
+            count: sql<number>`COUNT(*)`,
+          })
+          .from(escalas)
+          .where(and(
+            eq(escalas.runId, input.runId),
+            eq(escalas.pessoa, input.pessoa),
+            eq(escalas.ehFolga, false)
+          ));
+
+        // Get alert counts
+        const conflitosCount = await db
+          .select({ count: sql<number>`COUNT(*)` })
+          .from(alertasConflito)
+          .where(and(
+            eq(alertasConflito.runId, input.runId),
+            eq(alertasConflito.pessoa, input.pessoa)
+          ));
+
+        const folgaCount = await db
+          .select({ count: sql<number>`COUNT(*)` })
+          .from(alertasFolga)
+          .where(and(
+            eq(alertasFolga.runId, input.runId),
+            eq(alertasFolga.pessoa, input.pessoa)
+          ));
+
+        const deslocamentoCount = await db
+          .select({ count: sql<number>`COUNT(*)` })
+          .from(alertasDeslocamento)
+          .where(and(
+            eq(alertasDeslocamento.runId, input.runId),
+            eq(alertasDeslocamento.pessoa, input.pessoa)
+          ));
+
+        const interjornadaCount = await db
+          .select({ count: sql<number>`COUNT(*)` })
+          .from(alertasInterjornada)
+          .where(and(
+            eq(alertasInterjornada.runId, input.runId),
+            eq(alertasInterjornada.pessoa, input.pessoa)
+          ));
+
+        const viagensCount = await db
+          .select({ count: sql<number>`COUNT(*)` })
+          .from(viagens)
+          .where(and(
+            eq(viagens.runId, input.runId),
+            eq(viagens.pessoa, input.pessoa)
+          ));
+
+        return {
+          pessoa: input.pessoa,
+          totalHoras: Number(hoursResult[0]?.total || 0),
+          totalAtividades: Number(hoursResult[0]?.count || 0),
+          totalConflitos: Number(conflitosCount[0]?.count || 0),
+          totalViolacoesFolga: Number(folgaCount[0]?.count || 0),
+          totalRiscosDeslocamento: Number(deslocamentoCount[0]?.count || 0),
+          totalInterjornada: Number(interjornadaCount[0]?.count || 0),
+          totalViagens: Number(viagensCount[0]?.count || 0),
+        };
+      }),
+
+    /**
+     * Get person activity timeline
+     */
+    getPersonActivities: protectedProcedure
+      .input(z.object({
+        runId: z.number(),
+        pessoa: z.string(),
+        limit: z.number().default(50),
+        offset: z.number().default(0),
+      }))
+      .query(async ({ ctx, input }) => {
+        const run = await getRunById(input.runId);
+        if (!run || run.userId !== ctx.user.id) {
+          throw new Error("Run not found");
+        }
+
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const results = await db.select().from(escalas)
+          .where(and(
+            eq(escalas.runId, input.runId),
+            eq(escalas.pessoa, input.pessoa)
+          ))
+          .orderBy(desc(escalas.inicioDt))
+          .limit(input.limit)
+          .offset(input.offset);
+
+        return results;
+      }),
+  }),
+
+  grades: router({
+    /**
+     * Upload grade file and create grade record
+     */
+    uploadGrade: protectedProcedure
+      .input(z.object({
+        nome: z.string(),
+        file: z.object({
+          name: z.string(),
+          data: z.string(), // base64
+        }),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const userId = ctx.user.id;
+        const fileBuffer = Buffer.from(input.file.data, 'base64');
+
+        // Upload to S3
+        const timestamp = Date.now();
+        const fileKey = `grades/${userId}/${timestamp}-${input.file.name}`;
+        const { url: fileUrl } = await storagePut(fileKey, fileBuffer, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+        // Parse grade to get date range
+        const { parseGradeExcel } = await import('./grades');
+        const eventos = parseGradeExcel(fileBuffer);
+        
+        let dataInicio: Date | null = null;
+        let dataFim: Date | null = null;
+        if (eventos.length > 0) {
+          const datas = eventos.map(e => e.data.getTime());
+          dataInicio = new Date(Math.min(...datas));
+          dataFim = new Date(Math.max(...datas));
+        }
+
+        // Create grade record
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const result = await db.insert(grades).values({
+          userId,
+          nome: input.nome,
+          fileKey,
+          fileUrl,
+          dataInicio,
+          dataFim,
+          totalEventos: eventos.length,
+        });
+
+        return {
+          gradeId: Number(result[0].insertId),
+          totalEventos: eventos.length,
+          dataInicio,
+          dataFim,
+        };
+      }),
+
+    /**
+     * Analyze grade coverage with optional run data for folgas
+     */
+    analyzeGrade: protectedProcedure
+      .input(z.object({
+        gradeId: z.number(),
+        runId: z.number().optional(),
+        funcao: z.string().default('Narrador'),
+        profissionais: z.array(z.string()),
+        excecoes: z.array(z.object({
+          pessoa: z.string(),
+          tipo: z.string(),
+          dataInicio: z.string(), // ISO date
+          dataFim: z.string(), // ISO date
+        })).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        // Get grade
+        const grade = await db.select().from(grades).where(eq(grades.id, input.gradeId)).limit(1);
+        if (!grade[0] || grade[0].userId !== ctx.user.id) {
+          throw new Error("Grade not found");
+        }
+
+        // Fetch grade file from S3
+        const gradeFileResponse = await fetch(grade[0].fileUrl!);
+        const gradeFileBuffer = Buffer.from(await gradeFileResponse.arrayBuffer());
+
+        // Parse grade
+        const { parseGradeExcel, calcularSuficienciaCobertura } = await import('./grades');
+        const eventos = parseGradeExcel(gradeFileBuffer);
+
+        // Get folgas from run if provided
+        let folgas: Array<{ pessoa: string; data: Date; tipoFolga: string }> = [];
+        if (input.runId) {
+          const run = await getRunById(input.runId);
+          if (!run || run.userId !== ctx.user.id) {
+            throw new Error("Run not found");
+          }
+
+          // Get folgas from escalas
+          const folgasData = await db.select({
+            pessoa: escalas.pessoa,
+            data: escalas.data,
+            tipoFolga: escalas.tipoItem,
+          }).from(escalas)
+            .where(and(
+              eq(escalas.runId, input.runId),
+              eq(escalas.ehFolga, true)
+            ));
+
+          folgas = folgasData.map(f => ({
+            pessoa: f.pessoa,
+            data: f.data,
+            tipoFolga: f.tipoFolga || 'Day Off',
+          }));
+        }
+
+        // Parse exceptions
+        const excecoes = (input.excecoes || []).map(e => ({
+          pessoa: e.pessoa,
+          tipo: e.tipo,
+          dataInicio: new Date(e.dataInicio),
+          dataFim: new Date(e.dataFim),
+        }));
+
+        // Calculate coverage
+        const analise = calcularSuficienciaCobertura(
+          eventos,
+          input.funcao,
+          input.profissionais,
+          folgas,
+          excecoes
+        );
+
+        // Save analysis result
+        await db.insert(analiseGrades).values({
+          gradeId: input.gradeId,
+          runId: input.runId || null,
+          funcao: input.funcao,
+          totalEventos: analise.totalEventos,
+          eventosSemCobertura: analise.eventosSemCobertura,
+          eventosComCobertura: analise.eventosComCobertura,
+          totalProfissionais: analise.totalProfissionais,
+          profissionaisDisponiveis: analise.profissionaisDisponiveis,
+          profissionaisEmFolga: analise.profissionaisEmFolga,
+          profissionaisEmExcecao: analise.profissionaisEmExcecao,
+          resultado: analise.resultado,
+          recomendacoes: analise.recomendacoes.join('\n'),
+          detalhes: JSON.stringify(analise.detalhes),
+        });
+
+        // Save exceptions
+        if (excecoes.length > 0) {
+          await db.insert(excecoesProfissionais).values(
+            excecoes.map(e => ({
+              gradeId: input.gradeId,
+              pessoa: e.pessoa,
+              tipo: e.tipo,
+              dataInicio: e.dataInicio,
+              dataFim: e.dataFim,
+              observacoes: null,
+            }))
+          );
+        }
+
+        return analise;
+      }),
+
+    /**
+     * List grades for current user
+     */
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      return await db.select().from(grades)
+        .where(eq(grades.userId, ctx.user.id))
+        .orderBy(desc(grades.createdAt));
+    }),
+
+    /**
+     * Get grade analysis results
+     */
+    getAnalysis: protectedProcedure
+      .input(z.object({ gradeId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        // Verify ownership
+        const grade = await db.select().from(grades).where(eq(grades.id, input.gradeId)).limit(1);
+        if (!grade[0] || grade[0].userId !== ctx.user.id) {
+          throw new Error("Grade not found");
+        }
+
+        const results = await db.select().from(analiseGrades)
+          .where(eq(analiseGrades.gradeId, input.gradeId))
+          .orderBy(desc(analiseGrades.createdAt));
+
+        return results.map(r => ({
+          ...r,
+          detalhes: r.detalhes ? JSON.parse(r.detalhes as string) : [],
+        }));
       }),
   }),
 });
