@@ -225,6 +225,33 @@ export const appRouter = router({
 
         const totalHorasAtividades = Number(hoursResult[0]?.total || 0);
 
+        // Calculate % of WOs without associated event
+        const totalWOsResult = await db
+          .select({ count: sql<number>`COUNT(DISTINCT ${escalas.wo})` })
+          .from(escalas)
+          .where(and(
+            eq(escalas.runId, input.runId),
+            sql`${escalas.wo} IS NOT NULL`,
+            sql`${escalas.wo} != ''`
+          ));
+
+        const totalWOs = Number(totalWOsResult[0]?.count || 0);
+
+        const wosWithEventResult = await db
+          .select({ count: sql<number>`COUNT(DISTINCT ${escalas.wo})` })
+          .from(escalas)
+          .where(and(
+            eq(escalas.runId, input.runId),
+            sql`${escalas.wo} IS NOT NULL`,
+            sql`${escalas.wo} != ''`,
+            sql`${escalas.eventoPrograma} IS NOT NULL`,
+            sql`${escalas.eventoPrograma} != ''`
+          ));
+
+        const wosWithEvent = Number(wosWithEventResult[0]?.count || 0);
+        const wosSemEvento = totalWOs - wosWithEvent;
+        const percentualWOsSemEvento = totalWOs > 0 ? (wosSemEvento / totalWOs) * 100 : 0;
+
         return {
           totalEscalas: run.totalEscalas || 0,
           totalEventos: run.totalEventos || 0,
@@ -234,6 +261,9 @@ export const appRouter = router({
           totalInterjornada: run.totalInterjornada || 0,
           totalViagens: run.totalViagens || 0,
           totalHorasAtividades,
+          totalWOs,
+          wosSemEvento,
+          percentualWOsSemEvento,
         };
       }),
 

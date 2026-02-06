@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
-import { AlertTriangle, Clock, UserX, TrendingUp, ArrowLeft, Loader2, Moon, Plane } from "lucide-react";
+import { AlertTriangle, Clock, UserX, TrendingUp, ArrowLeft, Loader2, Moon, Plane, FileQuestion } from "lucide-react";
 import { useParams, useLocation } from "wouter";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
@@ -168,6 +168,17 @@ export default function Dashboard() {
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">{stats?.totalViagens || 0}</div>
               <p className="text-xs text-muted-foreground">Mudanças de cidade</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">WOs sem Evento</CardTitle>
+              <FileQuestion className="h-4 w-4 text-gray-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-gray-900">{stats?.percentualWOsSemEvento?.toFixed(1) || 0}%</div>
+              <p className="text-xs text-muted-foreground">{stats?.wosSemEvento || 0} de {stats?.totalWOs || 0} WOs</p>
             </CardContent>
           </Card>
         </div>

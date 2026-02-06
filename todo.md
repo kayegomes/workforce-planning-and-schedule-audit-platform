@@ -114,3 +114,10 @@
 - [ ] Exibir: eventos sem cobertura
 - [ ] Exibir: narradores disponíveis por data
 - [ ] Exibir: recomendações de ajuste
+
+
+## Novo KPI - WOs sem Evento
+- [x] Implementar cálculo de % de WOs sem evento associado
+- [x] Adicionar KPI ao dashboard (backend)
+- [x] Adicionar card de KPI no dashboard (frontend)
+- [x] Criar teste para validar cálculo
