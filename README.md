@@ -38,6 +38,16 @@ Sistema web completo para gestão e auditoria de escalas de trabalho com detecç
 - Rastreia origem, destino e datas de viagem
 - Quantifica volume de deslocamentos por pessoa
 
+### Análise de Grades
+- Upload de planilha de grade com eventos futuros
+- Cálculo de suficiência de narradores/profissionais
+- Considera folgas de runs anteriores (opcional)
+- Suporte a exceções (licença maternidade, licença médica, férias, etc.)
+- Classificação: **Suficiente** / **Insuficiente** / **Crítico**
+- Recomendações automáticas de ação
+- Detalhamento de cobertura por data
+- Visualização de eventos sem cobertura
+
 ### Dashboard Executivo
 
 #### KPIs
@@ -48,6 +58,8 @@ Sistema web completo para gestão e auditoria de escalas de trabalho com detecç
 - **Alertas Folga:** Violações de folga
 - **Alertas Deslocamento:** Riscos de deslocamento
 - **Alertas Interjornada:** Descanso insuficiente (< 11h)
+- **Total Viagens:** Número de deslocamentos entre cidades
+- **% WOs sem Evento:** Percentual de Work Orders sem programa associado
 - **Total Viagens:** Mudanças de cidade detectadas
 
 #### Visualizações

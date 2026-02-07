@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
-import { Upload, FileSpreadsheet, Loader2, CheckCircle2 } from "lucide-react";
+import { Upload, FileSpreadsheet, Loader2, CheckCircle2, Calendar } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -122,12 +122,13 @@ export default function Home() {
           <p className="text-gray-600 mt-2">Detecção inteligente de conflitos, violações de folga e riscos de deslocamento</p>
         </div>
 
-        <Card className="max-w-2xl mx-auto">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="h-5 w-5" />
-              Upload de Planilhas
-            </CardTitle>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 max-w-4xl mx-auto">
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5" />
+                Upload de Planilhas
+              </CardTitle>
             <CardDescription>
               Envie as planilhas de atividades (2468) e eventos consolidados (2020) para análise
             </CardDescription>
@@ -204,6 +205,24 @@ export default function Home() {
             )}
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Análise de Grades
+            </CardTitle>
+            <CardDescription>
+              Calcule a suficiência de narradores para eventos futuros
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => setLocation("/grades")} className="w-full" variant="outline">
+              Acessar Análise de Grades
+            </Button>
+          </CardContent>
+        </Card>
+        </div>
       </div>
     </div>
   );

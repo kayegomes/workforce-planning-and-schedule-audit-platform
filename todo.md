@@ -121,3 +121,16 @@
 - [x] Adicionar KPI ao dashboard (backend)
 - [x] Adicionar card de KPI no dashboard (frontend)
 - [x] Criar teste para validar cálculo
+
+
+## Frontend - Análise de Grades
+- [x] Criar página de upload de grade
+- [x] Formulário: selecionar run para folgas (opcional)
+- [x] Formulário: input de lista de profissionais
+- [x] Formulário: adicionar exceções (pessoa, tipo, data início/fim)
+- [x] Botão de processar análise
+- [x] Página de resultados: exibir status (suficiente/insuficiente/crítico)
+- [x] Página de resultados: exibir recomendações
+- [x] Página de resultados: tabela de cobertura por data
+- [x] Adicionar link no dashboard para análise de grades
+- [x] Criar testes para análise de grades
