@@ -6,14 +6,21 @@ import { trpc } from "@/lib/trpc";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useParams, useLocation } from "wouter";
 import { format } from "date-fns";
+import { AlertFilters, AlertFiltersState } from "@/components/AlertFilters";
+import { useState } from "react";
 
 export default function DeslocamentoRisks() {
   const { runId } = useParams<{ runId: string }>();
   const [, setLocation] = useLocation();
   const { isAuthenticated, loading: authLoading } = useAuth();
+  const [filters, setFilters] = useState<AlertFiltersState>({});
 
   const { data: risks, isLoading } = trpc.alerts.getDeslocamentoRisks.useQuery(
-    { runId: Number(runId), limit: 100 },
+    { 
+      runId: Number(runId), 
+      limit: 100,
+      ...filters
+    },
     { enabled: !!runId && isAuthenticated }
   );
 
@@ -44,6 +51,12 @@ export default function DeslocamentoRisks() {
       </div>
 
       <div className="container py-8">
+        <AlertFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          canais={["SporTV", "SporTV 2", "SporTV 3", "Premiere", "Globo"]}
+          funcoes={["Narrador", "Comentarista", "Repórter", "Apresentador"]}
+        />
         <Card>
           <CardHeader>
             <CardTitle>Riscos de Deslocamento ({risks?.length || 0})</CardTitle>

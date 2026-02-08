@@ -134,3 +134,16 @@
 - [x] Página de resultados: tabela de cobertura por data
 - [x] Adicionar link no dashboard para análise de grades
 - [x] Criar testes para análise de grades
+
+
+## Filtros Avançados nas Páginas de Alertas
+- [x] Backend: Atualizar rota de conflitos para aceitar filtros (dataInicio, dataFim, canal, funcao)
+- [x] Backend: Atualizar rota de folga para aceitar filtros (dataInicio, dataFim, canal, funcao)
+- [x] Backend: Atualizar rota de deslocamento para aceitar filtros (dataInicio, dataFim, canal, funcao)
+- [x] Backend: Atualizar rota de interjornada para aceitar filtros (dataInicio, dataFim, canal, funcao)
+- [x] Frontend: Criar componente AlertFilters reutilizável
+- [x] Frontend: Adicionar filtros na página de Conflitos
+- [x] Frontend: Adicionar filtros na página de Folga
+- [x] Frontend: Adicionar filtros na página de Deslocamento
+- [x] Frontend: Adicionar filtros na página de Interjornada
+- [x] Testar filtros em todas as páginas

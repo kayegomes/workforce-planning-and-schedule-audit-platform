@@ -73,7 +73,13 @@ Sistema web completo para gestão e auditoria de escalas de trabalho com detecç
 
 ### Páginas de Alertas
 - Tabelas detalhadas com todos os alertas detectados
-- Filtros por pessoa, data, canal e função
+- **Filtros Avançados:**
+  - **Período:** Data início e data fim para análise temporal
+  - **Canal:** Filtrar por canal específico (SporTV, Premiere, Globo, etc.)
+  - **Função:** Filtrar por função (Narrador, Comentarista, Repórter, Apresentador)
+  - **Pessoa:** Busca por nome da pessoa
+  - Botão "Limpar filtros" para resetar todos os filtros
+- Filtros disponíveis em todas as páginas de alertas (Conflitos, Folga, Deslocamento, Interjornada)
 - Exportação de dados (futuro)
 
 ### Perfil Individual

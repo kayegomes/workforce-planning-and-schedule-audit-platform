@@ -403,6 +403,10 @@ export const appRouter = router({
       .input(z.object({
         runId: z.number(),
         pessoa: z.string().optional(),
+        dataInicio: z.string().optional(),
+        dataFim: z.string().optional(),
+        canal: z.string().optional(),
+        funcao: z.string().optional(),
         limit: z.number().default(100),
         offset: z.number().default(0),
       }))
@@ -420,6 +424,44 @@ export const appRouter = router({
         if (input.pessoa) {
           conditions.push(eq(alertasConflito.pessoa, input.pessoa));
         }
+        if (input.dataInicio) {
+          conditions.push(sql`${alertasConflito.data} >= ${input.dataInicio}`);
+        }
+        if (input.dataFim) {
+          conditions.push(sql`${alertasConflito.data} <= ${input.dataFim}`);
+        }
+
+        // If canal or funcao filters are provided, we need to join with escalas
+        if (input.canal || input.funcao) {
+          const escalaConditions = [];
+          if (input.canal) escalaConditions.push(eq(escalas.canal, input.canal));
+          if (input.funcao) escalaConditions.push(eq(escalas.funcao, input.funcao));
+
+          const results = await db.select({
+            id: alertasConflito.id,
+            runId: alertasConflito.runId,
+            pessoa: alertasConflito.pessoa,
+            data: alertasConflito.data,
+            escalaId1: alertasConflito.escalaId1,
+            escalaId2: alertasConflito.escalaId2,
+            inicio1: alertasConflito.inicio1,
+            fim1: alertasConflito.fim1,
+            inicio2: alertasConflito.inicio2,
+            fim2: alertasConflito.fim2,
+            overlapMinutos: alertasConflito.overlapMinutos,
+            evento1: alertasConflito.evento1,
+            evento2: alertasConflito.evento2,
+            cidade1: alertasConflito.cidade1,
+            cidade2: alertasConflito.cidade2,
+            createdAt: alertasConflito.createdAt,
+          })
+          .from(alertasConflito)
+          .innerJoin(escalas, eq(alertasConflito.escalaId1, escalas.id))
+          .where(and(...conditions, ...escalaConditions))
+          .limit(input.limit)
+          .offset(input.offset);
+          return results;
+        }
 
         const results = await db.select().from(alertasConflito)
           .where(and(...conditions))
@@ -435,6 +477,10 @@ export const appRouter = router({
       .input(z.object({
         runId: z.number(),
         pessoa: z.string().optional(),
+        dataInicio: z.string().optional(),
+        dataFim: z.string().optional(),
+        canal: z.string().optional(),
+        funcao: z.string().optional(),
         limit: z.number().default(100),
         offset: z.number().default(0),
       }))
@@ -452,6 +498,39 @@ export const appRouter = router({
         if (input.pessoa) {
           conditions.push(eq(alertasFolga.pessoa, input.pessoa));
         }
+        if (input.dataInicio) {
+          conditions.push(sql`${alertasFolga.data} >= ${input.dataInicio}`);
+        }
+        if (input.dataFim) {
+          conditions.push(sql`${alertasFolga.data} <= ${input.dataFim}`);
+        }
+
+        // If canal or funcao filters are provided, join with escalas
+        if (input.canal || input.funcao) {
+          const escalaConditions = [];
+          if (input.canal) escalaConditions.push(eq(escalas.canal, input.canal));
+          if (input.funcao) escalaConditions.push(eq(escalas.funcao, input.funcao));
+
+          const results = await db.select({
+            id: alertasFolga.id,
+            runId: alertasFolga.runId,
+            pessoa: alertasFolga.pessoa,
+            data: alertasFolga.data,
+            tipoFolga: alertasFolga.tipoFolga,
+            escalaIdFolga: alertasFolga.escalaIdFolga,
+            escalaIdConflitante: alertasFolga.escalaIdConflitante,
+            duracaoHoras: alertasFolga.duracaoHoras,
+            status: alertasFolga.status,
+            eventoPrograma: alertasFolga.eventoPrograma,
+            createdAt: alertasFolga.createdAt,
+          })
+          .from(alertasFolga)
+          .innerJoin(escalas, eq(alertasFolga.escalaIdConflitante, escalas.id))
+          .where(and(...conditions, ...escalaConditions))
+          .limit(input.limit)
+          .offset(input.offset);
+          return results;
+        }
 
         const results = await db.select().from(alertasFolga)
           .where(and(...conditions))
@@ -467,6 +546,10 @@ export const appRouter = router({
       .input(z.object({
         runId: z.number(),
         pessoa: z.string().optional(),
+        dataInicio: z.string().optional(),
+        dataFim: z.string().optional(),
+        canal: z.string().optional(),
+        funcao: z.string().optional(),
         limit: z.number().default(100),
         offset: z.number().default(0),
       }))
@@ -484,6 +567,43 @@ export const appRouter = router({
         if (input.pessoa) {
           conditions.push(eq(alertasDeslocamento.pessoa, input.pessoa));
         }
+        if (input.dataInicio) {
+          conditions.push(sql`${alertasDeslocamento.dataPrev} >= ${input.dataInicio}`);
+        }
+        if (input.dataFim) {
+          conditions.push(sql`${alertasDeslocamento.dataPrev} <= ${input.dataFim}`);
+        }
+
+        // If canal or funcao filters are provided, join with escalas
+        if (input.canal || input.funcao) {
+          const escalaConditions = [];
+          if (input.canal) escalaConditions.push(eq(escalas.canal, input.canal));
+          if (input.funcao) escalaConditions.push(eq(escalas.funcao, input.funcao));
+
+          const results = await db.select({
+            id: alertasDeslocamento.id,
+            runId: alertasDeslocamento.runId,
+            pessoa: alertasDeslocamento.pessoa,
+            escalaIdPrev: alertasDeslocamento.escalaIdPrev,
+            escalaIdNext: alertasDeslocamento.escalaIdNext,
+            dataPrev: alertasDeslocamento.dataPrev,
+            dataNext: alertasDeslocamento.dataNext,
+            cidadePrev: alertasDeslocamento.cidadePrev,
+            cidadeNext: alertasDeslocamento.cidadeNext,
+            fimPrev: alertasDeslocamento.fimPrev,
+            inicioNext: alertasDeslocamento.inicioNext,
+            gapHoras: alertasDeslocamento.gapHoras,
+            gapMinimo: alertasDeslocamento.gapMinimo,
+            status: alertasDeslocamento.status,
+            createdAt: alertasDeslocamento.createdAt,
+          })
+          .from(alertasDeslocamento)
+          .innerJoin(escalas, eq(alertasDeslocamento.escalaIdPrev, escalas.id))
+          .where(and(...conditions, ...escalaConditions))
+          .limit(input.limit)
+          .offset(input.offset);
+          return results;
+        }
 
         const results = await db.select().from(alertasDeslocamento)
           .where(and(...conditions))
@@ -499,6 +619,10 @@ export const appRouter = router({
       .input(z.object({
         runId: z.number(),
         pessoa: z.string().optional(),
+        dataInicio: z.string().optional(),
+        dataFim: z.string().optional(),
+        canal: z.string().optional(),
+        funcao: z.string().optional(),
         limit: z.number().default(100),
         offset: z.number().default(0),
       }))
@@ -515,6 +639,43 @@ export const appRouter = router({
         
         if (input.pessoa) {
           conditions.push(eq(alertasInterjornada.pessoa, input.pessoa));
+        }
+        if (input.dataInicio) {
+          conditions.push(sql`${alertasInterjornada.dataPrev} >= ${input.dataInicio}`);
+        }
+        if (input.dataFim) {
+          conditions.push(sql`${alertasInterjornada.dataPrev} <= ${input.dataFim}`);
+        }
+
+        // If canal or funcao filters are provided, join with escalas
+        if (input.canal || input.funcao) {
+          const escalaConditions = [];
+          if (input.canal) escalaConditions.push(eq(escalas.canal, input.canal));
+          if (input.funcao) escalaConditions.push(eq(escalas.funcao, input.funcao));
+
+          const results = await db.select({
+            id: alertasInterjornada.id,
+            runId: alertasInterjornada.runId,
+            pessoa: alertasInterjornada.pessoa,
+            escalaIdPrev: alertasInterjornada.escalaIdPrev,
+            escalaIdNext: alertasInterjornada.escalaIdNext,
+            dataPrev: alertasInterjornada.dataPrev,
+            dataNext: alertasInterjornada.dataNext,
+            fimPrev: alertasInterjornada.fimPrev,
+            inicioNext: alertasInterjornada.inicioNext,
+            descansoHoras: alertasInterjornada.descansoHoras,
+            descansoMinimo: alertasInterjornada.descansoMinimo,
+            eventoPrev: alertasInterjornada.eventoPrev,
+            eventoNext: alertasInterjornada.eventoNext,
+            status: alertasInterjornada.status,
+            createdAt: alertasInterjornada.createdAt,
+          })
+          .from(alertasInterjornada)
+          .innerJoin(escalas, eq(alertasInterjornada.escalaIdPrev, escalas.id))
+          .where(and(...conditions, ...escalaConditions))
+          .limit(input.limit)
+          .offset(input.offset);
+          return results;
         }
 
         const results = await db.select().from(alertasInterjornada)
