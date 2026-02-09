@@ -97,6 +97,23 @@ Sistema web completo para gestão e auditoria de escalas de trabalho com detecç
 - Resultado: suficiente, insuficiente ou crítico
 - Recomendações de ajuste de equipe
 
+### Histórico Multi-Run (Visão Macro)
+- Agregação de dados de todas as execuções ao longo do tempo
+- **Estatísticas Agregadas:**
+  - Total de execuções realizadas
+  - Soma de horas, eventos, atividades e alertas
+  - Média de % de WOs sem evento
+- **Gráficos de Evolução:**
+  - Evolução de alertas (conflitos, folga, deslocamento, interjornada)
+  - Evolução de horas trabalhadas
+  - Evolução de eventos e atividades
+- **Indicadores de Tendência:**
+  - Setas indicando aumento/diminuição de alertas
+  - Percentual de variação entre primeira e última execução
+- **Tabela de Histórico:**
+  - Lista completa de todas as execuções
+  - Status, data, KPIs e botão para acessar dashboard de cada run
+
 ## 🏗️ Arquitetura
 
 ### Backend

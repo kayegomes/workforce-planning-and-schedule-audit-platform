@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { trpc } from "@/lib/trpc";
-import { Upload, FileSpreadsheet, Loader2, CheckCircle2, Calendar } from "lucide-react";
+import { Upload, FileSpreadsheet, Loader2, CheckCircle2, Calendar, History as HistoryIcon } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -219,6 +219,23 @@ export default function Home() {
           <CardContent>
             <Button onClick={() => setLocation("/grades")} className="w-full" variant="outline">
               Acessar Análise de Grades
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <HistoryIcon className="h-5 w-5" />
+              Histórico Multi-Run
+            </CardTitle>
+            <CardDescription>
+              Visão macro de todas as execuções ao longo do tempo
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => setLocation("/history")} className="w-full" variant="outline">
+              Ver Histórico
             </Button>
           </CardContent>
         </Card>

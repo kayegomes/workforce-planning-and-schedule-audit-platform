@@ -1005,6 +1005,96 @@ export const appRouter = router({
         }));
       }),
   }),
+
+  history: router({
+    /**
+     * Get all runs with statistics for history view
+     */
+    getAllRuns: protectedProcedure
+      .input(z.object({
+        limit: z.number().optional().default(50),
+      }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const allRuns = await db
+          .select()
+          .from(runs)
+          .where(eq(runs.userId, ctx.user.id))
+          .orderBy(desc(runs.createdAt))
+          .limit(input.limit);
+
+        return allRuns;
+      }),
+
+    /**
+     * Get KPI evolution over time (all runs)
+     */
+    getKpiEvolution: protectedProcedure
+      .query(async ({ ctx }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const allRuns = await db
+          .select()
+          .from(runs)
+          .where(eq(runs.userId, ctx.user.id))
+          .orderBy(runs.createdAt);
+
+        return allRuns.map(run => ({
+          runId: run.id,
+          data: run.createdAt,
+          horasAtividades: run.totalHorasAtividades || 0,
+          totalEventos: run.totalEventos || 0,
+          totalAtividades: run.totalAtividades || 0,
+          alertasConflito: run.totalConflitos || 0,
+          alertasFolga: run.totalViolacoesFolga || 0,
+          alertasDeslocamento: run.totalRiscosDeslocamento || 0,
+          alertasInterjornada: run.totalInterjornada || 0,
+          totalViagens: run.totalViagens || 0,
+          percentualWOsSemEvento: run.percentualWOsSemEvento || 0,
+        }));
+      }),
+
+    /**
+     * Get aggregated statistics across all runs
+     */
+    getAggregatedStats: protectedProcedure
+      .query(async ({ ctx }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const result = await db
+          .select({
+            totalRuns: sql<number>`COUNT(*)`,
+            totalHorasAtividades: sql<number>`SUM(${runs.totalHorasAtividades})`,
+            totalEventos: sql<number>`SUM(${runs.totalEventos})`,
+            totalAtividades: sql<number>`SUM(${runs.totalAtividades})`,
+            totalConflitos: sql<number>`SUM(${runs.totalConflitos})`,
+            totalViolacoesFolga: sql<number>`SUM(${runs.totalViolacoesFolga})`,
+            totalRiscosDeslocamento: sql<number>`SUM(${runs.totalRiscosDeslocamento})`,
+            totalInterjornada: sql<number>`SUM(${runs.totalInterjornada})`,
+            totalViagens: sql<number>`SUM(${runs.totalViagens})`,
+            avgPercentualWOsSemEvento: sql<number>`AVG(${runs.percentualWOsSemEvento})`,
+          })
+          .from(runs)
+          .where(eq(runs.userId, ctx.user.id));
+
+        return {
+          totalRuns: Number(result[0]?.totalRuns || 0),
+          totalHorasAtividades: Number(result[0]?.totalHorasAtividades || 0),
+          totalEventos: Number(result[0]?.totalEventos || 0),
+          totalAtividades: Number(result[0]?.totalAtividades || 0),
+          totalConflitos: Number(result[0]?.totalConflitos || 0),
+          totalViolacoesFolga: Number(result[0]?.totalViolacoesFolga || 0),
+          totalRiscosDeslocamento: Number(result[0]?.totalRiscosDeslocamento || 0),
+          totalInterjornada: Number(result[0]?.totalInterjornada || 0),
+          totalViagens: Number(result[0]?.totalViagens || 0),
+          avgPercentualWOsSemEvento: Number(result[0]?.avgPercentualWOsSemEvento || 0),
+        };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

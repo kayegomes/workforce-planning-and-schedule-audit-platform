@@ -147,3 +147,16 @@
 - [x] Frontend: Adicionar filtros na página de Deslocamento
 - [x] Frontend: Adicionar filtros na página de Interjornada
 - [x] Testar filtros em todas as páginas
+
+
+## Histórico Multi-Run (Visão Macro)
+- [x] Backend: Criar rota para listar todos os runs com estatísticas
+- [x] Backend: Criar rota para agregação de KPIs ao longo do tempo
+- [x] Backend: Criar rota para comparação entre períodos
+- [x] Frontend: Criar página de histórico multi-run
+- [x] Frontend: Gráfico de evolução de alertas ao longo do tempo
+- [x] Frontend: Gráfico de evolução de horas trabalhadas
+- [x] Frontend: Gráfico de evolução de eventos e atividades
+- [x] Frontend: Tabela de comparação entre runs
+- [x] Frontend: Filtros de período para análise temporal
+- [x] Testar histórico multi-run
