@@ -160,3 +160,9 @@
 - [x] Frontend: Tabela de comparação entre runs
 - [x] Frontend: Filtros de período para análise temporal
 - [x] Testar histórico multi-run
+
+
+## Bugs e Correções
+- [x] Corrigir erro ao acessar análise de grades (faltava import useAuth)
+- [x] Verificar se página de perfil individual está funcionando corretamente
+- [x] Garantir que perfil exibe histórico de atividades, alertas e estatísticas
