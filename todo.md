@@ -177,3 +177,11 @@
 - [ ] Permitir análise baseada em históricos (dados passados)
 - [ ] Permitir inserção de dados futuros para análise prévia
 - [ ] Adicionar acompanhamento de utilização de pessoas (elenco e funcionários) no perfil individual
+
+
+## Correções Urgentes
+- [x] Alterar KPI: "% WOs sem evento" → "% WOs sem elenco alocado"
+- [x] Corrigir lógica de interjornada: contar 11h entre dias (após fim do último evento do dia), não entre eventos do mesmo dia
+- [x] Atualizar backend: cálculo de WOs sem elenco
+- [x] Atualizar frontend: exibição do novo KPI
+- [x] Atualizar testes: validar nova lógica de interjornada (49 testes passando)

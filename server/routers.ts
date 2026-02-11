@@ -237,20 +237,19 @@ export const appRouter = router({
 
         const totalWOs = Number(totalWOsResult[0]?.count || 0);
 
-        const wosWithEventResult = await db
+        // WOs sem elenco alocado (sem pessoa)
+        const wosSemElencoResult = await db
           .select({ count: sql<number>`COUNT(DISTINCT ${escalas.wo})` })
           .from(escalas)
           .where(and(
             eq(escalas.runId, input.runId),
             sql`${escalas.wo} IS NOT NULL`,
             sql`${escalas.wo} != ''`,
-            sql`${escalas.eventoPrograma} IS NOT NULL`,
-            sql`${escalas.eventoPrograma} != ''`
+            sql`(${escalas.pessoa} IS NULL OR ${escalas.pessoa} = '')`
           ));
 
-        const wosWithEvent = Number(wosWithEventResult[0]?.count || 0);
-        const wosSemEvento = totalWOs - wosWithEvent;
-        const percentualWOsSemEvento = totalWOs > 0 ? (wosSemEvento / totalWOs) * 100 : 0;
+        const wosSemElenco = Number(wosSemElencoResult[0]?.count || 0);
+        const percentualWOsSemElenco = totalWOs > 0 ? (wosSemElenco / totalWOs) * 100 : 0;
 
         return {
           totalEscalas: run.totalEscalas || 0,
@@ -262,8 +261,8 @@ export const appRouter = router({
           totalViagens: run.totalViagens || 0,
           totalHorasAtividades,
           totalWOs,
-          wosSemEvento,
-          percentualWOsSemEvento,
+          wosSemElenco,
+          percentualWOsSemElenco,
         };
       }),
 

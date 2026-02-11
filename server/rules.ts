@@ -344,7 +344,7 @@ export function detectInterjornadaViolations(
     }
   }
   
-  // Check consecutive activities for insufficient rest
+  // Check consecutive activities for insufficient rest BETWEEN DAYS
   for (const [pessoa, activities] of Array.from(byPerson.entries())) {
     // Sort by end time
     activities.sort((a, b) => a.fimDt.getTime() - b.fimDt.getTime());
@@ -353,7 +353,16 @@ export function detectInterjornadaViolations(
       const prev = activities[i];
       const next = activities[i + 1];
       
-      // Calculate rest time in hours
+      // Only check interjornada if activities are on DIFFERENT days
+      const prevDate = prev.data.toISOString().split('T')[0];
+      const nextDate = next.data.toISOString().split('T')[0];
+      
+      if (prevDate === nextDate) {
+        // Same day - skip interjornada check
+        continue;
+      }
+      
+      // Calculate rest time in hours (from end of prev to start of next)
       const restMs = next.inicioDt.getTime() - prev.fimDt.getTime();
       const restHours = restMs / (1000 * 60 * 60);
       

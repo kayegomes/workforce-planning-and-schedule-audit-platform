@@ -173,12 +173,12 @@ export default function Dashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">WOs sem Evento</CardTitle>
+              <CardTitle className="text-sm font-medium">WOs sem Elenco</CardTitle>
               <FileQuestion className="h-4 w-4 text-gray-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{stats?.percentualWOsSemEvento?.toFixed(1) || 0}%</div>
-              <p className="text-xs text-muted-foreground">{stats?.wosSemEvento || 0} de {stats?.totalWOs || 0} WOs</p>
+              <div className="text-2xl font-bold text-gray-900">{stats?.percentualWOsSemElenco?.toFixed(1) || 0}%</div>
+              <p className="text-xs text-muted-foreground">{stats?.wosSemElenco || 0} de {stats?.totalWOs || 0} WOs</p>
             </CardContent>
           </Card>
         </div>
