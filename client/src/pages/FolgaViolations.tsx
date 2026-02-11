@@ -79,7 +79,14 @@ export default function FolgaViolations() {
                   <TableBody>
                     {violations.map((violation) => (
                       <TableRow key={violation.id}>
-                        <TableCell className="font-medium">{violation.pessoa}</TableCell>
+                        <TableCell className="font-medium">
+                          <button
+                            onClick={() => setLocation(`/profile/${runId}?pessoa=${encodeURIComponent(violation.pessoa)}`)}
+                            className="text-blue-600 hover:underline cursor-pointer"
+                          >
+                            {violation.pessoa}
+                          </button>
+                        </TableCell>
                         <TableCell>{format(new Date(violation.data), "dd/MM/yyyy")}</TableCell>
                         <TableCell>{violation.tipoFolga}</TableCell>
                         <TableCell className="max-w-xs truncate">{violation.eventoPrograma || "-"}</TableCell>

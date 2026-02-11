@@ -166,3 +166,14 @@
 - [x] Corrigir erro ao acessar análise de grades (faltava import useAuth)
 - [x] Verificar se página de perfil individual está funcionando corretamente
 - [x] Garantir que perfil exibe histórico de atividades, alertas e estatísticas
+
+
+## Novos Bugs e Requisitos de Arquitetura - Atualização
+- [x] Corrigir erro no Select da página de Análise de Grades (valor vazio não permitido)
+- [x] Adicionar navegação para perfil individual nas páginas de alertas (link clicável no nome da pessoa)
+- [ ] Reestruturar arquitetura: acumular dados ao longo do tempo organizados por data
+- [ ] Evitar duplicação de dados ao fazer novos uploads
+- [ ] Implementar filtros de período (data início/fim) em todas as consultas
+- [ ] Permitir análise baseada em históricos (dados passados)
+- [ ] Permitir inserção de dados futuros para análise prévia
+- [ ] Adicionar acompanhamento de utilização de pessoas (elenco e funcionários) no perfil individual

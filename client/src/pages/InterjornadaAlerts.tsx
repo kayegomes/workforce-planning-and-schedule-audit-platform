@@ -93,7 +93,14 @@ export default function InterjornadaAlerts() {
                   <TableBody>
                     {alerts.map((alert) => (
                       <TableRow key={alert.id}>
-                        <TableCell className="font-medium">{alert.pessoa}</TableCell>
+                        <TableCell className="font-medium">
+                          <button
+                            onClick={() => setLocation(`/profile/${runId}?pessoa=${encodeURIComponent(alert.pessoa)}`)}
+                            className="text-blue-600 hover:underline cursor-pointer"
+                          >
+                            {alert.pessoa}
+                          </button>
+                        </TableCell>
                         <TableCell>{format(new Date(alert.dataPrev), "dd/MM/yyyy")}</TableCell>
                         <TableCell>{format(new Date(alert.fimPrev), "dd/MM/yyyy HH:mm")}</TableCell>
                         <TableCell>{format(new Date(alert.inicioNext), "dd/MM/yyyy HH:mm")}</TableCell>
