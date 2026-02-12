@@ -757,6 +757,46 @@ export const appRouter = router({
             eq(viagens.pessoa, input.pessoa)
           ));
 
+        // Calculate utilization: get date range from escalas
+        const dateRangeResult = await db
+          .select({
+            minDate: sql<Date>`MIN(${escalas.data})`,
+            maxDate: sql<Date>`MAX(${escalas.data})`,
+          })
+          .from(escalas)
+          .where(and(
+            eq(escalas.runId, input.runId),
+            eq(escalas.pessoa, input.pessoa)
+          ));
+
+        const minDate = dateRangeResult[0]?.minDate;
+        const maxDate = dateRangeResult[0]?.maxDate;
+        
+        let horasDisponiveis = 0;
+        let percentualUtilizacao = 0;
+        
+        if (minDate && maxDate) {
+          // Calculate business days between min and max date
+          const start = new Date(minDate);
+          const end = new Date(maxDate);
+          let businessDays = 0;
+          
+          for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const dayOfWeek = d.getDay();
+            // Skip weekends (0 = Sunday, 6 = Saturday)
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+              businessDays++;
+            }
+          }
+          
+          // Assume 8 hours per business day as available hours
+          horasDisponiveis = businessDays * 8;
+          const totalHoras = Number(hoursResult[0]?.total || 0);
+          percentualUtilizacao = horasDisponiveis > 0 
+            ? Math.round((totalHoras / horasDisponiveis) * 100) 
+            : 0;
+        }
+
         return {
           pessoa: input.pessoa,
           totalHoras: Number(hoursResult[0]?.total || 0),
@@ -766,6 +806,8 @@ export const appRouter = router({
           totalRiscosDeslocamento: Number(deslocamentoCount[0]?.count || 0),
           totalInterjornada: Number(interjornadaCount[0]?.count || 0),
           totalViagens: Number(viagensCount[0]?.count || 0),
+          horasDisponiveis,
+          percentualUtilizacao,
         };
       }),
 

@@ -61,6 +61,66 @@ export default function PersonProfile() {
       </div>
 
       <div className="container py-8">
+        {/* Utilization Card */}
+        {profile && profile.horasDisponiveis > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Acompanhamento de Utilização</CardTitle>
+              <CardDescription>Horas trabalhadas vs. horas disponíveis no período</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-baseline gap-2 mb-2">
+                    <span className="text-4xl font-bold text-blue-600">{profile.percentualUtilizacao}%</span>
+                    <span className="text-sm text-gray-600">de utilização</span>
+                  </div>
+                  <div className="space-y-1 text-sm text-gray-600">
+                    <div className="flex justify-between">
+                      <span>Horas trabalhadas:</span>
+                      <span className="font-medium">{profile.totalHoras.toFixed(1)}h</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Horas disponíveis:</span>
+                      <span className="font-medium">{profile.horasDisponiveis.toFixed(1)}h</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Horas livres:</span>
+                      <span className="font-medium">{(profile.horasDisponiveis - profile.totalHoras).toFixed(1)}h</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="relative w-32 h-32">
+                  <svg className="transform -rotate-90 w-32 h-32">
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="#e5e7eb"
+                      strokeWidth="12"
+                      fill="none"
+                    />
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="#3b82f6"
+                      strokeWidth="12"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 56}`}
+                      strokeDashoffset={`${2 * Math.PI * 56 * (1 - profile.percentualUtilizacao / 100)}`}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <TrendingUp className="h-8 w-8 text-blue-600" />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>

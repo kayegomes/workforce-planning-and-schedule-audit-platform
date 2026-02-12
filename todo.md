@@ -185,3 +185,13 @@
 - [x] Atualizar backend: cálculo de WOs sem elenco
 - [x] Atualizar frontend: exibição do novo KPI
 - [x] Atualizar testes: validar nova lógica de interjornada (49 testes passando)
+
+
+## Acompanhamento de Utilização (Perfil Individual)
+- [x] Backend: Calcular horas trabalhadas por pessoa
+- [x] Backend: Calcular horas disponíveis (baseado em dias úteis ou período)
+- [x] Backend: Calcular percentual de utilização
+- [x] Frontend: Adicionar card de utilização no perfil
+- [x] Frontend: Adicionar gráfico de progresso circular (gauge)
+- [x] Frontend: Exibir breakdown: horas trabalhadas / horas disponíveis
+- [x] Testar cálculo de utilização (55 testes passando)
