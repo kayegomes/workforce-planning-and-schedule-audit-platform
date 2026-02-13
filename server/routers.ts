@@ -1045,6 +1045,87 @@ export const appRouter = router({
           detalhes: r.detalhes ? JSON.parse(r.detalhes as string) : [],
         }));
       }),
+
+    /**
+     * Simulate removing a professional from the team
+     */
+    simulateRemoval: protectedProcedure
+      .input(z.object({
+        gradeId: z.number(),
+        runId: z.number().optional(),
+        funcao: z.string().default('Narrador'),
+        profissionais: z.array(z.string()),
+        excecoes: z.array(z.object({
+          pessoa: z.string(),
+          tipo: z.string(),
+          dataInicio: z.string(),
+          dataFim: z.string(),
+        })).optional(),
+        pessoaRemover: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        // Get grade
+        const grade = await db.select().from(grades).where(eq(grades.id, input.gradeId)).limit(1);
+        if (!grade[0] || grade[0].userId !== ctx.user.id) {
+          throw new Error("Grade not found");
+        }
+
+        // Fetch grade file from S3
+        const gradeFileResponse = await fetch(grade[0].fileUrl!);
+        const gradeFileBuffer = Buffer.from(await gradeFileResponse.arrayBuffer());
+
+        // Parse grade
+        const { parseGradeExcel, simularRemocaoProfissional } = await import('./grades');
+        const eventos = parseGradeExcel(gradeFileBuffer);
+
+        // Get folgas from run if provided
+        let folgas: Array<{ pessoa: string; data: Date; tipoFolga: string }> = [];
+        if (input.runId) {
+          const run = await getRunById(input.runId);
+          if (!run || run.userId !== ctx.user.id) {
+            throw new Error("Run not found");
+          }
+
+          const folgasData = await db.select({
+            pessoa: escalas.pessoa,
+            data: escalas.data,
+            tipoFolga: escalas.tipoItem,
+          }).from(escalas)
+            .where(and(
+              eq(escalas.runId, input.runId),
+              eq(escalas.ehFolga, true)
+            ));
+
+          folgas = folgasData.map(f => ({
+            pessoa: f.pessoa,
+            data: f.data,
+            tipoFolga: f.tipoFolga || 'Day Off',
+          }));
+        }
+
+        // Parse exceptions
+        const excecoes = (input.excecoes || []).map(e => ({
+          pessoa: e.pessoa,
+          tipo: e.tipo,
+          dataInicio: new Date(e.dataInicio),
+          dataFim: new Date(e.dataFim),
+        }));
+
+        // Run simulation
+        const simulacao = simularRemocaoProfissional(
+          eventos,
+          input.funcao,
+          input.profissionais,
+          folgas,
+          excecoes,
+          input.pessoaRemover
+        );
+
+        return simulacao;
+      }),
   }),
 
   history: router({

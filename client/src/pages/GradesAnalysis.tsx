@@ -10,6 +10,7 @@ import { ArrowLeft, Loader2, Upload, Plus, X, CheckCircle2, AlertCircle, XCircle
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import SimulationPanel from "@/components/SimulationPanel";
 
 interface Excecao {
   pessoa: string;
@@ -450,6 +451,25 @@ export default function GradesAnalysis() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Simulation Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Simulações de Capacity Planning</CardTitle>
+                <CardDescription>
+                  Teste cenários "E se remover pessoa X?" para visualizar impacto na redistribuição de carga
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <SimulationPanel
+                  gradeId={gradeId!}
+                  runId={runId}
+                  funcao={funcao}
+                  profissionais={profissionaisText.split("\n").filter(p => p.trim()).map(p => p.trim())}
+                  excecoes={excecoes}
+                />
+              </CardContent>
+            </Card>
 
             {/* Coverage Details */}
             <Card>

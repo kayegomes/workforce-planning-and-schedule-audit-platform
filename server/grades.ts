@@ -258,3 +258,102 @@ export function calcularSuficienciaCobertura(
     detalhes,
   };
 }
+
+
+/**
+ * Simulation result comparing scenarios
+ */
+export interface SimulacaoResult {
+  cenarioAtual: AnaliseGradeResult;
+  cenarioSimulado: AnaliseGradeResult;
+  pessoaRemovida: string;
+  impacto: {
+    eventosSemCoberturaAdicional: number;
+    taxaCoberturaAtual: number;
+    taxaCoberturaSimulada: number;
+    diferencaTaxaCobertura: number;
+    diasCriticos: Array<{
+      data: Date;
+      eventosNovos: number;
+      profissionaisDisponiveis: number;
+    }>;
+  };
+  recomendacoes: string[];
+}
+
+/**
+ * Simulate removing a professional and recalculate coverage
+ */
+export function simularRemocaoProfissional(
+  eventos: GradeEvento[],
+  funcao: string,
+  profissionais: string[],
+  folgas: FolgaInfo[],
+  excecoes: ExcecaoProfissional[],
+  pessoaRemover: string
+): SimulacaoResult {
+  // Calculate current scenario
+  const cenarioAtual = calcularSuficienciaCobertura(eventos, funcao, profissionais, folgas, excecoes);
+
+  // Calculate simulated scenario (without the person)
+  const profissionaisSimulados = profissionais.filter(p => p !== pessoaRemover);
+  const cenarioSimulado = calcularSuficienciaCobertura(eventos, funcao, profissionaisSimulados, folgas, excecoes);
+
+  // Calculate impact
+  const eventosSemCoberturaAdicional = cenarioSimulado.eventosSemCobertura - cenarioAtual.eventosSemCobertura;
+  const taxaCoberturaAtual = cenarioAtual.totalEventos > 0 
+    ? (cenarioAtual.eventosComCobertura / cenarioAtual.totalEventos) * 100 
+    : 100;
+  const taxaCoberturaSimulada = cenarioSimulado.totalEventos > 0 
+    ? (cenarioSimulado.eventosComCobertura / cenarioSimulado.totalEventos) * 100 
+    : 100;
+  const diferencaTaxaCobertura = taxaCoberturaSimulada - taxaCoberturaAtual;
+
+  // Identify critical days (days that became critical after removal)
+  const diasCriticos: Array<{ data: Date; eventosNovos: number; profissionaisDisponiveis: number }> = [];
+  for (let i = 0; i < cenarioAtual.detalhes.length; i++) {
+    const atualDetalhe = cenarioAtual.detalhes[i];
+    const simuladoDetalhe = cenarioSimulado.detalhes[i];
+    
+    if (simuladoDetalhe.eventosSemCobertura > atualDetalhe.eventosSemCobertura) {
+      diasCriticos.push({
+        data: atualDetalhe.data,
+        eventosNovos: simuladoDetalhe.eventosSemCobertura - atualDetalhe.eventosSemCobertura,
+        profissionaisDisponiveis: simuladoDetalhe.profissionaisDisponiveis,
+      });
+    }
+  }
+
+  // Generate recommendations
+  const recomendacoes: string[] = [];
+  if (eventosSemCoberturaAdicional === 0) {
+    recomendacoes.push(`✅ A remoção de ${pessoaRemover} não impacta a cobertura de eventos`);
+    recomendacoes.push("Equipe tem capacidade suficiente para absorver a ausência");
+  } else {
+    recomendacoes.push(`⚠️ A remoção de ${pessoaRemover} deixaria ${eventosSemCoberturaAdicional} eventos adicionais sem cobertura`);
+    recomendacoes.push(`Taxa de cobertura cairia de ${taxaCoberturaAtual.toFixed(1)}% para ${taxaCoberturaSimulada.toFixed(1)}%`);
+    recomendacoes.push(`${diasCriticos.length} dias seriam afetados negativamente`);
+    
+    if (cenarioSimulado.resultado === "critico") {
+      recomendacoes.push("🚨 CRÍTICO: Remoção causaria situação insustentável");
+      recomendacoes.push("Necessário contratar substituto antes de remover esta pessoa");
+    } else if (cenarioSimulado.resultado === "insuficiente") {
+      recomendacoes.push("⚠️ Remoção causaria insuficiência de cobertura");
+      recomendacoes.push("Considerar redistribuição de carga ou contratação temporária");
+    }
+  }
+
+  return {
+    cenarioAtual,
+    cenarioSimulado,
+    pessoaRemovida: pessoaRemover,
+    impacto: {
+      eventosSemCoberturaAdicional,
+      taxaCoberturaAtual,
+      taxaCoberturaSimulada,
+      diferencaTaxaCobertura,
+      diasCriticos,
+    },
+    recomendacoes,
+  };
+}

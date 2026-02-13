@@ -236,3 +236,17 @@
 - [ ] Testar tendência e previsão
 - [ ] Testar indicador de burnout
 - [ ] Testar simulações de capacity planning
+
+
+## Simulações de Capacity Planning (Análise de Grades)
+- [x] Backend: Criar rota para simular remoção de pessoa
+- [x] Backend: Calcular redistribuição de carga após remoção
+- [x] Backend: Identificar quem absorve a carga e quem estoura 100%
+- [x] Backend: Calcular impacto em horas extras e sobrecarga
+- [x] Frontend: Adicionar interface de simulação na página de grades
+- [x] Frontend: Seletor de pessoa para remover
+- [x] Frontend: Exibir resultados: quem absorve, quem estoura, impacto total
+- [x] Frontend: Comparação lado a lado: cenário atual vs. cenário simulado
+- [x] Testes: Validar cálculo de redistribuição de carga
+- [x] Testes: Validar identificação de pessoas sobrecarregadas após simulação
+- [x] 9 testes automatizados validando simulações (72 testes passando no total)
