@@ -195,3 +195,44 @@
 - [x] Frontend: Adicionar gráfico de progresso circular (gauge)
 - [x] Frontend: Exibir breakdown: horas trabalhadas / horas disponíveis
 - [x] Testar cálculo de utilização (55 testes passando)
+
+
+## Funcionalidades Avançadas de Análise
+
+### 1. Heatmap de Sobrecarga
+- [x] Backend: Calcular utilização por dia da semana por pessoa
+- [x] Backend: Identificar picos recorrentes (dias com utilização > 80%)
+- [x] Backend: Identificar subutilização (dias com utilização < 40%)
+- [x] Backend: Identificar pessoas cronicamente sobrecarregadas (utilização média > 85%)
+- [x] Frontend: Criar componente de heatmap (dia da semana × pessoa)
+- [x] Frontend: Adicionar página de análise de sobrecarga
+- [x] Frontend: Exibir insights e recomendações (redimensionamento, redistribuição)
+- [x] Testes: 8 testes automatizados validando cálculo de heatmap (63 testes passando)
+
+### 2. Tendência de Utilização
+- [ ] Backend: Calcular média móvel de 4 semanas
+- [ ] Backend: Calcular tendência (crescimento/queda) com regressão linear
+- [ ] Backend: Gerar previsão de utilização para 6 semanas futuras
+- [ ] Frontend: Adicionar gráfico de tendência no perfil individual
+- [ ] Frontend: Exibir previsão com alerta se > 95%
+
+### 3. Indicador de Risco de Burnout
+- [ ] Backend: Detectar utilização > 90% por 4+ semanas consecutivas
+- [ ] Backend: Identificar eventos ao vivo frequentes
+- [ ] Backend: Gerar flag de risco de burnout
+- [ ] Frontend: Exibir badge de risco no perfil individual
+- [ ] Frontend: Adicionar página de alertas de burnout
+
+### 4. Simulações de Capacity Planning (Análise de Grades)
+- [x] Corrigir erro do Select na página de análise de grades
+- [ ] Backend: Implementar simulação "E se remover pessoa X?"
+- [ ] Backend: Calcular redistribuição de carga
+- [ ] Backend: Identificar quem estoura 100% de utilização
+- [ ] Frontend: Adicionar interface de simulação
+- [ ] Frontend: Exibir resultados: quem absorve, quem estoura, impacto
+
+### 5. Testes
+- [ ] Testar heatmap de sobrecarga
+- [ ] Testar tendência e previsão
+- [ ] Testar indicador de burnout
+- [ ] Testar simulações de capacity planning

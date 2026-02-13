@@ -1136,6 +1136,108 @@ export const appRouter = router({
         };
       }),
   }),
+
+  /**
+   * Analytics router for advanced analysis features
+   */
+  analytics: router({
+    /**
+     * Get heatmap data: utilization by day of week per person
+     */
+    getHeatmapData: protectedProcedure
+      .input(z.object({
+        runId: z.number().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        // Get all escalas for the run (or latest run if not specified)
+        let targetRunId = input.runId;
+        if (!targetRunId) {
+          const latestRun = await db
+            .select({ id: runs.id })
+            .from(runs)
+            .where(eq(runs.userId, ctx.user.id))
+            .orderBy(desc(runs.createdAt))
+            .limit(1);
+          targetRunId = latestRun[0]?.id;
+        }
+
+        if (!targetRunId) {
+          return { heatmapData: [], insights: { picos: [], subutilizacao: [], sobrecarregados: [] } };
+        }
+
+        const atividades = await db
+          .select()
+          .from(escalas)
+          .where(eq(escalas.runId, targetRunId));
+
+        // Calculate utilization by person and day of week
+        const utilizationMap = new Map<string, Map<number, number>>(); // pessoa -> dayOfWeek -> hours
+
+        for (const ativ of atividades) {
+          if (!ativ.pessoa || !ativ.data) continue;
+          const date = new Date(ativ.data);
+          const dayOfWeek = date.getDay(); // 0=Sunday, 6=Saturday
+          const hours = parseFloat(ativ.duracaoHoras?.toString() || "0");
+
+          if (!utilizationMap.has(ativ.pessoa)) {
+            utilizationMap.set(ativ.pessoa, new Map());
+          }
+          const personMap = utilizationMap.get(ativ.pessoa)!;
+          personMap.set(dayOfWeek, (personMap.get(dayOfWeek) || 0) + hours);
+        }
+
+        // Convert to array format and calculate percentages (assuming 8h workday)
+        const heatmapData = [];
+        for (const [pessoa, dayMap] of Array.from(utilizationMap.entries())) {
+          const weekData = {
+            pessoa,
+            sunday: Math.round(((dayMap.get(0) || 0) / 8) * 100),
+            monday: Math.round(((dayMap.get(1) || 0) / 8) * 100),
+            tuesday: Math.round(((dayMap.get(2) || 0) / 8) * 100),
+            wednesday: Math.round(((dayMap.get(3) || 0) / 8) * 100),
+            thursday: Math.round(((dayMap.get(4) || 0) / 8) * 100),
+            friday: Math.round(((dayMap.get(5) || 0) / 8) * 100),
+            saturday: Math.round(((dayMap.get(6) || 0) / 8) * 100),
+            avgUtilization: Math.round(
+              (Array.from(dayMap.values()).reduce((a: number, b: number) => a + b, 0) / 7 / 8) * 100
+            ),
+          };
+          heatmapData.push(weekData);
+        }
+
+        // Generate insights
+        const picos: Array<{ pessoa: string; dia: string; utilizacao: number }> = [];
+        const subutilizacao: Array<{ pessoa: string; dia: string; utilizacao: number }> = [];
+        const sobrecarregados: Array<{ pessoa: string; utilizacaoMedia: number }> = [];
+
+        for (const data of heatmapData) {
+          // Identify peaks (days > 80%)
+          const days = [data.sunday, data.monday, data.tuesday, data.wednesday, data.thursday, data.friday, data.saturday];
+          const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+          days.forEach((util, idx) => {
+            if (util > 80) {
+              picos.push({ pessoa: data.pessoa, dia: dayNames[idx], utilizacao: util });
+            }
+            if (util < 40 && util > 0) {
+              subutilizacao.push({ pessoa: data.pessoa, dia: dayNames[idx], utilizacao: util });
+            }
+          });
+
+          // Chronically overloaded (avg > 85%)
+          if (data.avgUtilization > 85) {
+            sobrecarregados.push({ pessoa: data.pessoa, utilizacaoMedia: data.avgUtilization });
+          }
+        }
+
+        return {
+          heatmapData: heatmapData.sort((a, b) => b.avgUtilization - a.avgUtilization),
+          insights: { picos, subutilizacao, sobrecarregados },
+        };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

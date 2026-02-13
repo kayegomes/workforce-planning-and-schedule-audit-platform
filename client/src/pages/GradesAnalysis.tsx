@@ -230,12 +230,12 @@ export default function GradesAnalysis() {
 
                 <div>
                   <Label htmlFor="run-select">Run de Folgas (Opcional)</Label>
-                  <Select value={runId?.toString() || ""} onValueChange={(v) => setRunId(v ? Number(v) : null)}>
+                  <Select value={runId?.toString()} onValueChange={(v) => setRunId(v && v !== 'none' ? Number(v) : null)}>
                     <SelectTrigger id="run-select" className="mt-1">
                       <SelectValue placeholder="Selecione um run para considerar folgas" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum</SelectItem>
+                      <SelectItem value="none">Nenhum</SelectItem>
                       {runs?.map((run) => (
                         <SelectItem key={run.id} value={run.id.toString()}>
                           Run #{run.id} - {new Date(run.createdAt).toLocaleDateString()}

@@ -13,6 +13,7 @@ import InterjornadaAlerts from "./pages/InterjornadaAlerts";
 import PersonProfile from "./pages/PersonProfile";
 import GradesAnalysis from "./pages/GradesAnalysis";
 import History from "./pages/History";
+import Heatmap from "./pages/Heatmap";
 
 function Router() {
   return (
@@ -26,6 +27,7 @@ function Router() {
       <Route path={"/profile/:runId"} component={PersonProfile} />
       <Route path={"/grades"} component={GradesAnalysis} />
       <Route path={"/history"} component={History} />
+      <Route path={"/heatmap"} component={Heatmap} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>
