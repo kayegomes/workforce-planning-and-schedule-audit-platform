@@ -250,3 +250,20 @@
 - [x] Testes: Validar cálculo de redistribuição de carga
 - [x] Testes: Validar identificação de pessoas sobrecarregadas após simulação
 - [x] 9 testes automatizados validando simulações (72 testes passando no total)
+
+
+## Tendência de Utilização (Perfil Individual)
+- [x] Backend: Calcular média móvel de 4 semanas de utilização por pessoa
+- [x] Backend: Implementar regressão linear para previsão de 6 semanas futuras
+- [x] Backend: Identificar tendências (crescente, estável, decrescente)
+- [x] Backend: Detectar alertas de sobrecarga futura (previsão > 85%)
+- [x] Frontend: Criar componente de gráfico de tendência (Chart.js)
+- [x] Frontend: Exibir linha de utilização histórica (todas as semanas disponíveis)
+- [x] Frontend: Exibir linha de previsão (próximas 6 semanas)
+- [x] Frontend: Destacar zona de risco (85% e 100%) no gráfico
+- [x] Frontend: Adicionar seção de tendência no perfil individual
+- [x] Frontend: Exibir alertas quando previsão indica sobrecarga futura
+- [x] Testes: Validar cálculo de média móvel
+- [x] Testes: Validar previsão linear
+- [x] Testes: Validar detecção de tendências e alertas
+- [x] 16 testes automatizados validando tendência (88 testes passando no total)

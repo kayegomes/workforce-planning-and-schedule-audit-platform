@@ -6,6 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { ArrowLeft, Loader2, User, Clock, AlertTriangle, UserX, TrendingUp, Moon, Plane } from "lucide-react";
 import { useParams, useLocation, useSearch } from "wouter";
 import { format } from "date-fns";
+import TrendAnalysisSection from "@/components/TrendAnalysisSection";
 
 export default function PersonProfile() {
   const { runId } = useParams<{ runId: string }>();
@@ -120,6 +121,9 @@ export default function PersonProfile() {
             </CardContent>
           </Card>
         )}
+
+        {/* Trend Analysis */}
+        <TrendAnalysisSection runId={Number(runId)} pessoa={pessoa} />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

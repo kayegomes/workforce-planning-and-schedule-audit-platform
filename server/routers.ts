@@ -1318,6 +1318,70 @@ export const appRouter = router({
           insights: { picos, subutilizacao, sobrecarregados },
         };
       }),
+
+    /**
+     * Get trend analysis for a specific person
+     */
+    getTrendAnalysis: protectedProcedure
+      .input(z.object({
+        runId: z.number().optional(),
+        pessoa: z.string(),
+        weeksToPredict: z.number().default(6),
+      }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        // Get target run
+        let targetRunId = input.runId;
+        if (!targetRunId) {
+          const latestRun = await db
+            .select({ id: runs.id })
+            .from(runs)
+            .where(eq(runs.userId, ctx.user.id))
+            .orderBy(desc(runs.createdAt))
+            .limit(1);
+
+          if (!latestRun[0]) {
+            throw new Error("No runs found");
+          }
+          targetRunId = latestRun[0].id;
+        }
+
+        // Verify ownership
+        const run = await getRunById(targetRunId);
+        if (!run || run.userId !== ctx.user.id) {
+          throw new Error("Run not found");
+        }
+
+        // Get escalas for this person
+        const escalasRaw = await db
+          .select({
+            data: escalas.data,
+            duracaoHoras: escalas.duracaoHoras,
+            ehFolga: escalas.ehFolga,
+          })
+          .from(escalas)
+          .where(and(
+            eq(escalas.runId, targetRunId),
+            eq(escalas.pessoa, input.pessoa)
+          ))
+          .orderBy(escalas.data);
+
+        // Convert duracaoHoras to number
+        const escalasData = escalasRaw.map(e => ({
+          data: e.data,
+          duracaoHoras: parseFloat(e.duracaoHoras || '0'),
+          ehFolga: e.ehFolga,
+        }));
+
+        // Calculate weekly utilization and analyze trend
+        const { calculateWeeklyUtilization, analyzeTrend } = await import('./trend');
+        const weeklyData = calculateWeeklyUtilization(escalasData);
+        const trendAnalysis = analyzeTrend(input.pessoa, weeklyData, input.weeksToPredict);
+
+        return trendAnalysis;
+      }),
   }),
 });
 
