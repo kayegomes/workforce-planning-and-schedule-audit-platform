@@ -23,7 +23,8 @@ import { storagePut } from "./storage";
 import { parseExcelFile, processAtividades, processEventos, mergeEscalasWithEventos } from "./etl";
 import { detectConflicts, detectFolgaViolations, detectDeslocamentoRisks, detectInterjornadaViolations, detectViagens, detectQualityIssues } from "./rules";
 import { runs, escalas, alertasConflito, alertasFolga, alertasDeslocamento, alertasInterjornada, viagens, grades, analiseGrades, excecoesProfissionais } from "../drizzle/schema";
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, not, inArray } from "drizzle-orm";
+import { invokeLLM } from "./_core/llm";
 
 export const appRouter = router({
   system: systemRouter,
@@ -682,6 +683,113 @@ export const appRouter = router({
           .limit(input.limit)
           .offset(input.offset);
         return results;
+      }),
+
+    /**
+     * Get AI ML substitution suggestion for a specific conflict
+     */
+    getAISuggestion: protectedProcedure
+      .input(z.object({
+        alertaId: z.number(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        // Obter o alerta
+        const alertas = await db.select().from(alertasConflito).where(eq(alertasConflito.id, input.alertaId)).limit(1);
+        if (alertas.length === 0) throw new Error("Alerta de conflito não encontrado");
+        
+        const alerta = alertas[0];
+        
+        // Obter as escalas conflitantes
+        const esc1 = (await db.select().from(escalas).where(eq(escalas.id, alerta.escalaId1)).limit(1))[0];
+        const esc2 = (await db.select().from(escalas).where(eq(escalas.id, alerta.escalaId2)).limit(1))[0];
+        
+        const funcaoAProcurar = esc1?.funcao || esc2?.funcao;
+        
+        if (!funcaoAProcurar) {
+          throw new Error("Não foi possível identificar a função/cargo para substituição.");
+        }
+
+        // Listar todas as pessoas com a mesma função na run atual, para achar substitutos
+        const pessoasComMesmaFuncaoQuery = await db.select({ pessoa: escalas.pessoa })
+          .from(escalas)
+          .where(and(eq(escalas.runId, alerta.runId), eq(escalas.funcao, funcaoAProcurar), eq(escalas.ehFolga, false)))
+          .groupBy(escalas.pessoa);
+          
+        const possiveisSubstitutos = pessoasComMesmaFuncaoQuery.map(p => p.pessoa).filter(p => p !== alerta.pessoa);
+
+        // Remover da lista quem já tem escala cruzando o mesmo horário de esc1 e esc2
+        const startTime = alerta.inicio1 < alerta.inicio2 ? alerta.inicio1 : alerta.inicio2;
+        const endTime = alerta.fim1 > alerta.fim2 ? alerta.fim1 : alerta.fim2;
+
+        const indisponiveis = await db.select({ pessoa: escalas.pessoa }).from(escalas).where(and(
+          eq(escalas.runId, alerta.runId),
+          inArray(escalas.pessoa, possiveisSubstitutos.length > 0 ? possiveisSubstitutos : ['']),
+          sql`${escalas.inicioDt} < ${endTime}`,
+          sql`${escalas.fimDt} > ${startTime}`
+        )).groupBy(escalas.pessoa);
+        
+        const setIndisponiveis = new Set(indisponiveis.map(i => i.pessoa));
+        const disponiveis = possiveisSubstitutos.filter(p => !setIndisponiveis.has(p));
+
+        if (disponiveis.length === 0) {
+          return {
+            status: "NoAvailableCandidates",
+            suggestions: [],
+            message: "Não há profissionais com a mesma função disponíveis neste horário na base de dados.",
+          };
+        }
+
+        // Criar o contexto para o LLM
+        const promptContext = `
+Você é um AI Manager de planejamento de escala (Capacity Planning e Escalas).
+Há um conflito de horário para a pessoa: ${alerta.pessoa}.
+Função: ${funcaoAProcurar}.
+Evento 1: ${alerta.evento1} (Canal: ${esc1?.canal}, Local: ${esc1?.cidade})
+Evento 2: ${alerta.evento2} (Canal: ${esc2?.canal}, Local: ${esc2?.cidade})
+Horário total do conflito: de ${startTime.toLocaleString()} até ${endTime.toLocaleString()}.
+
+Aqui estão os nomes dos profissionais da mesma função que ESTÃO LIVRES neste horário:
+${disponiveis.join(", ")}
+
+Sua tarefa é agir como o "Modelo de ML de Resolução de Conflitos".
+Formule a resposta EXATAMENTE no formato JSON requisitado, recomendando os 3 melhores nomes (ou menos, se houver menos) para substituir o profissional no Evento 1 ou no Evento 2 (decida o que for mais lógico). 
+Para cada escolhido, dê uma justificativa simulando que você analisou: "Disponibilidade, Nível/Função, Carga atual estimada e Histórico".
+`;
+
+        const response = await invokeLLM({
+          messages: [{ role: "user", content: promptContext }],
+          outputSchema: {
+            name: "SuggestedSubstitutions",
+            schema: {
+              type: "object",
+              properties: {
+                eventoAlvo: { type: "string", description: "O evento sugerido para realizar a substituição (Evento 1 ou Evento 2)" },
+                sugestoes: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      nome: { type: "string" },
+                      explicacaoML: { type: "string", description: "Explicação gerada pelo modelo envolvendo carga atual, histórico, etc." },
+                      scoreModelo: { type: "number", description: "Um score de 0 a 100 de compatibilidade" }
+                    },
+                    required: ["nome", "explicacaoML", "scoreModelo"]
+                  }
+                }
+              },
+              required: ["eventoAlvo", "sugestoes"]
+            }
+          }
+        });
+
+        const mlOutput = JSON.parse(response.choices[0].message.content as string);
+        return {
+          status: "Success",
+          data: mlOutput,
+        };
       }),
   }),
 

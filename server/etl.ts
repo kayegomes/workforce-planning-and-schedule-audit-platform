@@ -9,6 +9,7 @@ export interface RawAtividade {
   'Tipo de Atividade'?: string;
   Descrição?: string;
   'Sub-Atividade'?: string;
+  'Row Display'?: string;
   Cliente?: string;
   Canal?: string;
   Data?: string;
@@ -250,6 +251,20 @@ export function processAtividades(rawData: RawAtividade[]): ProcessedEscala[] {
       
       const duracaoHoras = calculateDuration(inicioDt, fimDt);
       
+      // Filter out non-Elenco functions (e.g. Produtor, Repcine, etc)
+      const funcaoRaw = row.Função?.trim() || '';
+      const funcaoLower = funcaoRaw.toLowerCase();
+      const isElenco = 
+        funcaoLower.includes('narrador') || 
+        funcaoLower.includes('comentarista') ||
+        funcaoLower.includes('apresentador') ||
+        funcaoLower.includes('colaborador');
+        
+      if (!isElenco && funcaoRaw !== '') {
+        // We skip this row, as the user only wants "Elenco (narradores, comentaristas, etc)"
+        continue;
+      }
+      
       // Determine if it's time off (folga)
       const ehFolga = tipoAtividade.toLowerCase().includes('other time off') ||
                       tipoAtividade.toLowerCase().includes('folga') ||
@@ -269,15 +284,22 @@ export function processAtividades(rawData: RawAtividade[]): ProcessedEscala[] {
       const ehViagem = tipoAtividade.toLowerCase().includes('quick hold') &&
                        (row['Sub-Atividade']?.toLowerCase().includes('viagem') || false);
       
+      let eventoProgramaStr = row['Evento/Programa']?.trim() || null;
+      let descricaoItemStr = row['Sub-Atividade']?.trim() || row.Descrição?.trim() || null;
+
+      if (tipoAtividade.toLowerCase().includes('quick hold') && row['Row Display']) {
+        eventoProgramaStr = row['Row Display'].trim();
+      }
+
       processed.push({
         pessoa: nome,
         funcao: row.Função?.trim() || null,
         tipoItem: tipoAtividade,
-        descricaoItem: row['Sub-Atividade']?.trim() || row.Descrição?.trim() || null,
+        descricaoItem: descricaoItemStr,
         status: row['Status Aprov.']?.trim() || null,
         canal: row.Canal?.trim() || null,
         cliente: row.Cliente?.trim() || null,
-        eventoPrograma: row['Evento/Programa']?.trim() || null,
+        eventoPrograma: eventoProgramaStr,
         wo: row['WO#']?.trim() || null,
         data,
         inicioDt,

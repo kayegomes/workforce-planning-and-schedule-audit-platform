@@ -1,266 +1,292 @@
-# Workforce Planning & Schedule Audit Platform
+# Plataforma de Planejamento de Escalas
 
-Sistema web para planejamento, auditoria e análise de escalas operacionais, com detecção automática de conflitos de horário, violações de folga e riscos logísticos de deslocamento.
+Sistema web completo para gestão e auditoria de escalas de trabalho com detecção inteligente de conflitos, violações de folga e riscos de deslocamento.
 
-A plataforma processa planilhas operacionais, consolida os dados em um pipeline ETL e aplica regras de negócio para identificar riscos operacionais e problemas de planejamento em equipes de produção.
+## 🎯 Funcionalidades
 
----
-<img width="1354" height="639" alt="image" src="https://github.com/user-attachments/assets/79288a58-c86e-4688-8795-5042cd576bc6" />
+### Upload e Processamento
+- Upload de planilhas Excel (2468 Atividades e 2020 Eventos Consolidado)
+- Processamento automático via pipeline ETL
+- Consolidação e normalização de dados
+- Cálculo automático de duração com tratamento de virada de dia
+- Merge inteligente de dados por WO + data
 
-# Visão Geral
+### Detecção de Alertas
 
-Operações de produção esportiva envolvem centenas de atividades simultâneas distribuídas entre profissionais, eventos e cidades.
+#### 1. Conflitos de Horário
+- Detecta sobreposições de atividades para a mesma pessoa
+- Calcula overlap em minutos
+- Identifica eventos conflitantes
 
-Gerenciar escalas manualmente pode gerar problemas como:
+#### 2. Violações de Folga
+- Detecta trabalho agendado em dias de folga, férias ou compensação
+- Bloqueio de dia inteiro para folgas
+- Rastreamento de duração e status de aprovação
 
-- sobreposição de atividades
-- trabalho em dias de folga
-- deslocamentos inviáveis entre cidades
-- descanso insuficiente entre jornadas
-- falta de cobertura em eventos futuros
+#### 3. Riscos de Deslocamento
+- Identifica gap insuficiente entre atividades em cidades diferentes
+- Gap mínimo configurável (padrão: 3 horas)
+- Rastreamento de origem/destino e horários
 
-Esta plataforma foi desenvolvida para **automatizar a auditoria e o planejamento dessas escalas**, permitindo identificar riscos operacionais antes que afetem a operação.
+#### 4. Alertas de Interjornada
+- Detecta descanso insuficiente entre atividades (< 11 horas)
+- Calcula tempo de descanso real entre fim e início de atividades
+- Identifica violações de normas trabalhistas
 
----
-<img width="1358" height="640" alt="image" src="https://github.com/user-attachments/assets/35a9b08c-ef14-4182-a609-94801fc423f7" />
+#### 5. Rastreamento de Viagens
+- Detecta automaticamente mudanças de cidade
+- Rastreia origem, destino e datas de viagem
+- Quantifica volume de deslocamentos por pessoa
 
-# Principais Funcionalidades
+### Análise de Grades
+- Upload de planilha de grade com eventos futuros
+- Cálculo de suficiência de narradores/profissionais
+- Considera folgas de runs anteriores (opcional)
+- Suporte a exceções (licença maternidade, licença médica, férias, etc.)
+- Classificação: **Suficiente** / **Insuficiente** / **Crítico**
+- Recomendações automáticas de ação
+- Detalhamento de cobertura por data
+- Visualização de eventos sem cobertura
 
-## Upload e Processamento de Dados
+### Dashboard Executivo
 
-O sistema recebe planilhas operacionais e executa automaticamente um pipeline de processamento.
+#### KPIs
+- **Horas Atividades:** Total de horas de trabalho
+- **Total Eventos:** Eventos únicos processados
+- **Total Atividades:** Número de atividades processadas
+- **Alertas Conflito:** Sobreposições detectadas
+- **Alertas Folga:** Violações de folga
+- **Alertas Deslocamento:** Riscos de deslocamento
+- **Alertas Interjornada:** Descanso insuficiente (< 11h)
+- **Total Viagens:** Número de deslocamentos entre cidades
+- **% WOs sem Evento:** Percentual de Work Orders sem programa associado
+- **Total Viagens:** Mudanças de cidade detectadas
 
-Fontes suportadas:
+#### Visualizações
+- **Conflitos por Semana:** Tendência de conflitos (gráfico de linha)
+- **Horas por Semana:** Distribuição de carga de trabalho (gráfico de barras)
 
-- Relatório **2468 – Atividades de Equipe**
-- Relatório **2020 – Gestão de Eventos Consolidado**
+#### Rankings
+- **Top 10 Conflitos:** Pessoas com mais conflitos de horário
+- **Top 10 Violações de Folga:** Pessoas com mais trabalho em folga
+- **Top 10 Riscos de Deslocamento:** Pessoas com mais gaps insuficientes
 
-Processamento realizado:
+### Páginas de Alertas
+- Tabelas detalhadas com todos os alertas detectados
+- **Filtros Avançados:**
+  - **Período:** Data início e data fim para análise temporal
+  - **Canal:** Filtrar por canal específico (SporTV, Premiere, Globo, etc.)
+  - **Função:** Filtrar por função (Narrador, Comentarista, Repórter, Apresentador)
+  - **Pessoa:** Busca por nome da pessoa
+  - Botão "Limpar filtros" para resetar todos os filtros
+- Filtros disponíveis em todas as páginas de alertas (Conflitos, Folga, Deslocamento, Interjornada)
+- Exportação de dados (futuro)
 
-- normalização de dados
-- consolidação de atividades
-- merge inteligente por WO + data
-- cálculo de duração com suporte a virada de dia
-- enriquecimento de dados de eventos
+### Perfil Individual
+- Estatísticas de desempenho por pessoa
+- Histórico completo de atividades
+- Contadores de alertas (conflitos, folgas, deslocamento, interjornada)
+- Total de viagens realizadas
+- Timeline de atividades com detalhes
 
----
+### Análise de Grades
+- Upload de grade de eventos futuros
+- Cálculo de suficiência de narradores
+- Consideração de férias e folgas
+- Input de exceções (licença maternidade, médica, etc.)
+- Resultado: suficiente, insuficiente ou crítico
+- Recomendações de ajuste de equipe
 
-## Detecção Automática de Alertas
+### Histórico Multi-Run (Visão Macro)
+- Agregação de dados de todas as execuções ao longo do tempo
+- **Estatísticas Agregadas:**
+  - Total de execuções realizadas
+  - Soma de horas, eventos, atividades e alertas
+  - Média de % de WOs sem evento
+- **Gráficos de Evolução:**
+  - Evolução de alertas (conflitos, folga, deslocamento, interjornada)
+  - Evolução de horas trabalhadas
+  - Evolução de eventos e atividades
+- **Indicadores de Tendência:**
+  - Setas indicando aumento/diminuição de alertas
+  - Percentual de variação entre primeira e última execução
+- **Tabela de Histórico:**
+  - Lista completa de todas as execuções
+  - Status, data, KPIs e botão para acessar dashboard de cada run
 
-A plataforma aplica regras de negócio para identificar riscos operacionais.
+## 🏗️ Arquitetura
 
-### Conflitos de Horário
+### Backend
+- **Framework:** Express + tRPC
+- **Banco de Dados:** PostgreSQL (TiDB)
+- **ETL:** Pipeline customizado com xlsx
+- **Autenticação:** Manus OAuth
 
-Detecta sobreposição de atividades para a mesma pessoa.
+### Frontend
+- **Framework:** React 19 + TypeScript
+- **Estilo:** Tailwind CSS 4 + shadcn/ui
+- **Gráficos:** Recharts
+- **Roteamento:** Wouter
 
-- cálculo do tempo de overlap
-- identificação de eventos conflitantes
-- rastreamento de atividades sobrepostas
+### Estrutura do Banco de Dados
 
----
+#### Tabelas Principais
+- `users` - Usuários do sistema
+- `runs` - Execuções de processamento
+- `escalas` - Atividades consolidadas (F_Escalas)
+- `eventos` - Eventos consolidados (D_Eventos)
+- `alertas_conflito` - Conflitos de horário
+- `alertas_folga` - Violações de folga
+- `alertas_deslocamento` - Riscos de deslocamento
+- `alertas_interjornada` - Violações de interjornada (< 11h)
+- `viagens` - Rastreamento de mudanças de cidade
+- `grades` - Grades de eventos futuros
+- `analise_grades` - Resultados de análise de suficiência
+- `excecoes_profissionais` - Exceções (licenças, etc.)
+- `qualidade_dados` - Problemas de qualidade de dados
 
-### Violações de Folga
+## 🚀 Como Usar
 
-Detecta atividades agendadas em dias de:
+### 1. Acesso
+- Acesse a plataforma e faça login com sua conta Manus
 
-- folga
-- férias
-- compensação
+### 2. Upload de Planilhas
+- Na página inicial, selecione os dois arquivos:
+  - **Planilha 2468:** Atividades de Equipe (Sub-Atividades)
+  - **Planilha 2020:** Gestão de Eventos Consolidado
+- Clique em "Processar Planilhas"
 
-O sistema bloqueia automaticamente o dia completo como indisponível.
+### 3. Processamento
+- O sistema irá:
+  1. Fazer upload dos arquivos para S3
+  2. Processar e consolidar os dados
+  3. Aplicar regras de negócio
+  4. Detectar alertas
+  5. Calcular estatísticas
 
----
+### 4. Visualização
+- Após o processamento, você será redirecionado para o Dashboard
+- Explore os KPIs, gráficos e rankings
+- Acesse as páginas de alertas para detalhes
 
-### Riscos de Deslocamento
+## 📊 Regras de Negócio
 
-Identifica situações em que o tempo entre atividades em cidades diferentes é insuficiente.
-
-Regras aplicadas:
-
-- detecção automática de mudança de cidade
-- cálculo do tempo entre atividades
-- alerta quando gap < 3 horas (configurável)
-
----
-
-### Alertas de Interjornada
-
-Detecta descanso insuficiente entre jornadas.
-
-Regra aplicada:
-
+### Conflito de Horário
 ```
-Descanso mínimo entre jornadas: 11 horas
-```
-
-O sistema calcula automaticamente o tempo entre o fim de uma atividade e o início da próxima.
-
----
-
-### Rastreamento de Viagens
-
-Mudanças de cidade são detectadas automaticamente.
-
-O sistema registra:
-
-- cidade de origem
-- cidade de destino
-- data da viagem
-- profissional envolvido
-
-Isso permite analisar padrões de deslocamento da equipe.
-
----
-
-# Dashboard Executivo
-
-O sistema disponibiliza um painel analítico com métricas operacionais.
-
-Principais indicadores:
-
-- Total de horas trabalhadas
-- Total de eventos processados
-- Número de atividades
-- Conflitos de horário
-- Violações de folga
-- Riscos de deslocamento
-- Alertas de interjornada
-- Mudanças de cidade detectadas
-
-Visualizações incluídas:
-
-- conflitos por semana
-- distribuição de horas trabalhadas
-- ranking de profissionais com maior número de alertas
-
----
-
-# Análise de Grade Futura
-
-A plataforma também permite analisar eventos futuros.
-
-O sistema calcula automaticamente a suficiência de profissionais disponíveis considerando:
-
-- folgas
-- férias
-- exceções (licença médica, maternidade etc.)
-
-Resultado da análise:
-
-- Suficiente
-- Insuficiente
-- Crítico
-
-Também são geradas recomendações automáticas para ajuste de equipe.
-
----
-
-# Arquitetura do Sistema
-
-```mermaid
-flowchart LR
-A[Planilhas Operacionais] --> B[Pipeline ETL]
-B --> C[Processamento de Dados]
-C --> D[(PostgreSQL)]
-D --> E[Motor de Regras]
-E --> F[Dashboard Analítico]
-```
-
----
-
-# Stack Tecnológica
-
-## Backend
-
-Node.js  
-Express  
-tRPC  
-
-## Banco de Dados
-
-PostgreSQL / TiDB  
-
-## Processamento de Dados
-
-Pipeline ETL customizado com leitura de planilhas XLSX
-
-## Frontend
-
-React 19  
-TypeScript  
-Tailwind CSS  
-shadcn/ui  
-
-## Visualização de Dados
-
-Recharts
-
----
-
-# Estrutura do Banco de Dados
-
-Principais tabelas:
-
-```
-users
-runs
-escalas
-eventos
-alertas_conflito
-alertas_folga
-alertas_deslocamento
-alertas_interjornada
-viagens
-grades
-analise_grades
+SE pessoa tem duas atividades A e B
+E horário de A sobrepõe horário de B
+ENTÃO gerar alerta de conflito
 ```
 
----
-
-# Fluxo de Processamento
-
-1. Upload das planilhas operacionais
-2. Execução do pipeline ETL
-3. Consolidação e normalização de dados
-4. Aplicação das regras de negócio
-5. Detecção automática de alertas
-6. Persistência dos dados no banco
-7. Atualização do dashboard analítico
-
----
-
-# Testes
-
-O projeto possui cobertura de testes para os principais módulos.
-
-Testes incluem:
-
-- processamento ETL
-- detecção de conflitos
-- validação de regras de folga
-- detecção de riscos de deslocamento
-- validação de interjornada
-- autenticação
-
-Resultado atual:
-
+### Violação de Folga
 ```
-18 testes passando
+SE pessoa tem folga no dia D
+E pessoa tem atividade de trabalho no dia D
+ENTÃO gerar alerta de violação de folga
 ```
 
+### Risco de Deslocamento
+```
+SE pessoa tem atividade A na cidade X
+E pessoa tem atividade B na cidade Y (X ≠ Y)
+E gap entre fim de A e início de B < 3 horas
+ENTÃO gerar alerta de risco de deslocamento
+```
+
+### Interjornada
+```
+SE pessoa tem atividade A que termina em T1
+E pessoa tem atividade B que começa em T2
+E (T2 - T1) < 11 horas
+ENTÃO gerar alerta de interjornada
+```
+
+### Viagem
+```
+SE pessoa tem atividade A na cidade X
+E pessoa tem atividade B na cidade Y
+E X ≠ Y
+E B ocorre após A
+ENTÃO registrar viagem de X para Y
+```
+
+## 🧪 Testes
+
+Execute os testes com:
+
+```bash
+pnpm test
+```
+
+Cobertura de testes:
+- ✅ Processamento ETL
+- ✅ Detecção de conflitos
+- ✅ Detecção de violações de folga
+- ✅ Detecção de riscos de deslocamento
+- ✅ Detecção de interjornada
+- ✅ Detecção de viagens
+- ✅ Autenticação e logout
+
+**Total: 18 testes passando**
+
+## 📝 Formato das Planilhas
+
+### Planilha 2468 (Atividades)
+Colunas esperadas:
+- Nome
+- Tipo de Atividade
+- Data (DD/MM/YYYY)
+- Início (HH:MM)
+- Fim (HH:MM)
+- WO#
+- Função
+- Cidade
+- UF
+- Status Aprov.
+
+### Planilha 2020 (Eventos)
+Colunas esperadas:
+- WO#
+- Data (DD/MM/YYYY)
+- Tipo de Evento
+- Produto
+- Canal
+- Cidade
+- UF
+
+## 🔧 Configuração
+
+### Variáveis de Ambiente
+Todas as variáveis são injetadas automaticamente pelo sistema Manus:
+- `DATABASE_URL` - Conexão com PostgreSQL
+- `JWT_SECRET` - Segredo para sessões
+- `OAUTH_SERVER_URL` - URL do servidor OAuth
+
+### Banco de Dados
+Execute as migrações:
+
+```bash
+pnpm db:push
+```
+
+## 📈 Roadmap Futuro
+
+- [ ] Visão macro (agregação multi-run)
+- [ ] Filtros avançados de período, canal e função
+- [ ] Página de análise de grades (frontend)
+- [ ] Gráficos de eventos por tipo
+- [ ] Gráficos de viagens por destino
+- [ ] Exportação de alertas para Excel/CSV
+- [ ] Configuração de gap mínimo por rota
+- [ ] Notificações por e-mail
+- [ ] Integração com Microsoft Teams
+- [ ] API para integração externa
+- [ ] Dashboard em tempo real (WebSocket)
+
+## 🤝 Suporte
+
+
+
 ---
 
-# Possíveis Evoluções
 
-- exportação de alertas em Excel
-- integração com Microsoft Teams
-- notificações automáticas
-- configuração de regras por rota
-- dashboard em tempo real
-- API pública para integração
-
----
-
-# Sobre o Projeto
-
-Plataforma desenvolvida para apoiar o planejamento operacional de equipes em ambientes de produção esportiva, automatizando a análise de escalas e reduzindo riscos logísticos e operacionais.

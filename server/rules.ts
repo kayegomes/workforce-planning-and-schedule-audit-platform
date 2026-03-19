@@ -87,6 +87,12 @@ export function detectConflicts(
   const byPerson = new Map<string, Array<ProcessedEscala & { id: number }>>();
   
   for (const escala of escalas) {
+    // Prevent time-off from being considered a regular working conflict (handled by detectFolgaViolations)
+    if (escala.ehFolga) continue;
+
+    // Ignore 'Pc Oliveira' for overlap conflicts as he participates in multiple activities simultaneously
+    if (escala.pessoa.toLowerCase().includes('pc oliveira')) continue;
+
     if (!byPerson.has(escala.pessoa)) {
       byPerson.set(escala.pessoa, []);
     }
@@ -130,8 +136,8 @@ export function detectConflicts(
             inicio2: a2.inicioDt,
             fim2: a2.fimDt,
             overlapMinutos: minutes,
-            evento1: a1.eventoPrograma,
-            evento2: a2.eventoPrograma,
+            evento1: a1.eventoPrograma || a1.descricaoItem || a1.tipoItem,
+            evento2: a2.eventoPrograma || a2.descricaoItem || a2.tipoItem,
             cidade1: a1.cidade,
             cidade2: a2.cidade,
           });
@@ -178,7 +184,7 @@ export function detectFolgaViolations(
           escalaIdConflitante: work.id,
           duracaoHoras: work.duracaoHoras,
           status: work.status,
-          eventoPrograma: work.eventoPrograma,
+          eventoPrograma: work.eventoPrograma || work.descricaoItem || work.tipoItem,
         });
       }
     }
@@ -378,8 +384,8 @@ export function detectInterjornadaViolations(
           inicioNext: next.inicioDt,
           descansoHoras: Math.max(0, restHours),
           descansoMinimo: minRestHours,
-          eventoPrev: prev.eventoPrograma,
-          eventoNext: next.eventoPrograma,
+          eventoPrev: prev.eventoPrograma || prev.descricaoItem || prev.tipoItem,
+          eventoNext: next.eventoPrograma || next.descricaoItem || next.tipoItem,
           status: next.status,
         });
       }
