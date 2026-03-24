@@ -183,6 +183,65 @@ describe("Interjornada Detection", () => {
 
     expect(violations).toHaveLength(0);
   });
+
+  it("should NOT detect violation if the activity is an ignored activity like VIAGEM", () => {
+    const escalas: Array<ProcessedEscala & { id: number }> = [
+      {
+        id: 1,
+        pessoa: "Carlos Pereira",
+        funcao: "Narrador",
+        tipoItem: "Booking",
+        descricaoItem: "Viagem Volta RJ x SP", // Ignored activity
+        status: "Confirmed",
+        canal: "Globo",
+        cliente: null,
+        eventoPrograma: "Viagem", // Ignored activity
+        wo: "WO005",
+        data: new Date("2024-01-15"),
+        inicioDt: new Date("2024-01-15T20:00:00"),
+        fimDt: new Date("2024-01-15T23:00:00"), // Ends at 23:00
+        duracaoHoras: 3,
+        cidade: "São Paulo",
+        uf: "SP",
+        local: null,
+        ehFolga: false,
+        ehViagem: true,
+        ano: 2024,
+        mes: 1,
+        semanaIso: 3,
+        diaSemana: "Segunda",
+      },
+      {
+        id: 2,
+        pessoa: "Carlos Pereira",
+        funcao: "Narrador",
+        tipoItem: "Booking",
+        descricaoItem: null,
+        status: "Confirmed",
+        canal: "Globo",
+        cliente: null,
+        eventoPrograma: "Futebol",
+        wo: "WO006",
+        data: new Date("2024-01-16"),
+        inicioDt: new Date("2024-01-16T08:00:00"), // Only 9h rest, but previous was VIAGEM
+        fimDt: new Date("2024-01-16T12:00:00"),
+        duracaoHoras: 4,
+        cidade: "São Paulo",
+        uf: "SP",
+        local: null,
+        ehFolga: false,
+        ehViagem: false,
+        ano: 2024,
+        mes: 1,
+        semanaIso: 3,
+        diaSemana: "Terça",
+      },
+    ];
+
+    const violations = detectInterjornadaViolations(escalas, 11);
+
+    expect(violations).toHaveLength(0);
+  });
 });
 
 describe("Viagens Detection", () => {

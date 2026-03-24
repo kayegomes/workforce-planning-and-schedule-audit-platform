@@ -56,6 +56,21 @@ export interface QualidadeIssue {
 }
 
 /**
+ * Helper function to determine if an activity should be ignored for conflict/violation rules
+ */
+export function isIgnoredActivity(escala: ProcessedEscala): boolean {
+  const description = (escala.eventoPrograma || escala.descricaoItem || escala.tipoItem || '').toLowerCase();
+  
+  // Ignore travel events
+  if (description.includes('viagem')) return true;
+  
+  // Ignore personal commitments
+  if (description.includes('compromisso pessoal')) return true;
+  
+  return false;
+}
+
+/**
  * Detect time overlap conflicts between two activities
  */
 function hasTimeOverlap(
@@ -171,7 +186,7 @@ export function detectFolgaViolations(
   // Check for work activities on time-off days
   for (const [key, activities] of Array.from(byPersonDate.entries())) {
     const timeOffActivities = activities.filter((a: ProcessedEscala & { id: number }) => a.ehFolga);
-    const workActivities = activities.filter((a: ProcessedEscala & { id: number }) => !a.ehFolga);
+    const workActivities = activities.filter((a: ProcessedEscala & { id: number }) => !a.ehFolga && !isIgnoredActivity(a));
     
     // If there's time off and work on the same day, it's a violation
     for (const timeOff of timeOffActivities) {
@@ -341,8 +356,8 @@ export function detectInterjornadaViolations(
   const byPerson = new Map<string, Array<ProcessedEscala & { id: number }>>();
   
   for (const escala of escalas) {
-    // Only consider work activities (not time off)
-    if (!escala.ehFolga) {
+    // Only consider work activities (not time off and not ignored activities)
+    if (!escala.ehFolga && !isIgnoredActivity(escala)) {
       if (!byPerson.has(escala.pessoa)) {
         byPerson.set(escala.pessoa, []);
       }

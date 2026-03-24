@@ -186,6 +186,65 @@ describe("Business Rules", () => {
       expect(violations[0].pessoa).toBe("João Silva");
       expect(violations[0].tipoFolga).toBe("Other Time Off");
     });
+
+    it("should NOT detect work during time-off if activity is an ignored activity like COMPROMISSO PESSOAL", () => {
+      const escalas: Array<ProcessedEscala & { id: number }> = [
+        {
+          id: 1,
+          pessoa: "Maria",
+          tipoItem: "Other Time Off",
+          data: new Date("2024-01-15"),
+          inicioDt: new Date("2024-01-15T00:00:00"),
+          fimDt: new Date("2024-01-16T00:00:00"),
+          duracaoHoras: 24,
+          funcao: null,
+          descricaoItem: null,
+          status: null,
+          canal: null,
+          cliente: null,
+          eventoPrograma: null,
+          wo: null,
+          cidade: null,
+          uf: null,
+          local: null,
+          ehFolga: true,
+          ehViagem: false,
+          ano: 2024,
+          mes: 1,
+          semanaIso: 3,
+          diaSemana: "Segunda",
+        },
+        {
+          id: 2,
+          pessoa: "Maria",
+          tipoItem: "Booking",
+          data: new Date("2024-01-15"),
+          inicioDt: new Date("2024-01-15T09:00:00"),
+          fimDt: new Date("2024-01-15T18:00:00"),
+          duracaoHoras: 9,
+          funcao: null,
+          descricaoItem: "Compromisso Pessoal",
+          status: null,
+          canal: null,
+          cliente: null,
+          eventoPrograma: null,
+          wo: null,
+          cidade: null,
+          uf: null,
+          local: null,
+          ehFolga: false,
+          ehViagem: false,
+          ano: 2024,
+          mes: 1,
+          semanaIso: 3,
+          diaSemana: "Segunda",
+        },
+      ];
+
+      const violations = detectFolgaViolations(escalas);
+
+      expect(violations).toHaveLength(0);
+    });
   });
 
   describe("detectDeslocamentoRisks", () => {
