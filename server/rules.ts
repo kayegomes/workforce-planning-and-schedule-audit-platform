@@ -378,14 +378,20 @@ export function detectInterjornadaViolations(
       const prevDate = prev.data.toISOString().split('T')[0];
       const nextDate = next.data.toISOString().split('T')[0];
       
-      if (prevDate === nextDate) {
-        // Same day - skip interjornada check
-        continue;
-      }
-      
       // Calculate rest time in hours (from end of prev to start of next)
       const restMs = next.inicioDt.getTime() - prev.fimDt.getTime();
       const restHours = restMs / (1000 * 60 * 60);
+
+      const eventPrev = prev.eventoPrograma || prev.descricaoItem || prev.tipoItem;
+      const eventNext = next.eventoPrograma || next.descricaoItem || next.tipoItem;
+
+      // Ignore if:
+      // 1. Same activity/event (continuation)
+      // 2. Very small gap (less than 3h) - usually considered same workday/jornada assignment
+      // 3. Same calendar date
+      if (eventPrev === eventNext || restHours < 3 || prevDate === nextDate) {
+        continue;
+      }
       
       // If rest is less than minimum, it's a violation
       if (restHours < minRestHours && restHours >= 0) {
@@ -399,8 +405,8 @@ export function detectInterjornadaViolations(
           inicioNext: next.inicioDt,
           descansoHoras: Math.max(0, restHours),
           descansoMinimo: minRestHours,
-          eventoPrev: prev.eventoPrograma || prev.descricaoItem || prev.tipoItem,
-          eventoNext: next.eventoPrograma || next.descricaoItem || next.tipoItem,
+          eventoPrev: eventPrev,
+          eventoNext: eventNext,
           status: next.status,
         });
       }
