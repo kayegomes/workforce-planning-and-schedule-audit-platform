@@ -14,6 +14,8 @@ import PersonProfile from "./pages/PersonProfile";
 import GradesAnalysis from "./pages/GradesAnalysis";
 import History from "./pages/History";
 import Heatmap from "./pages/Heatmap";
+import WOsSemElenco from "./pages/WOsSemElenco";
+import RosterPlanning from "./pages/RosterPlanning";
 
 function Router() {
   return (
@@ -28,6 +30,8 @@ function Router() {
       <Route path={"/grades"} component={GradesAnalysis} />
       <Route path={"/history"} component={History} />
       <Route path={"/heatmap"} component={Heatmap} />
+      <Route path={"/wos-sem-elenco/:runId"} component={WOsSemElenco} />
+      <Route path={"/roster-planning/:runId"} component={RosterPlanning} />
       <Route path={"/404"} component={NotFound} />
       <Route component={NotFound} />
     </Switch>

@@ -268,6 +268,39 @@ export const appRouter = router({
       }),
 
     /**
+     * Get details for WOs without allocated cast
+     */
+    getWOsSemElenco: protectedProcedure
+      .input(z.object({ 
+        runId: z.number(),
+        limit: z.number().default(50),
+        offset: z.number().default(0),
+      }))
+      .query(async ({ ctx, input }) => {
+        const run = await getRunById(input.runId);
+        if (!run || run.userId !== ctx.user.id) {
+          throw new Error("Run not found");
+        }
+
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const results = await db.select()
+          .from(escalas)
+          .where(and(
+            eq(escalas.runId, input.runId),
+            sql`${escalas.wo} IS NOT NULL`,
+            sql`${escalas.wo} != ''`,
+            sql`(${escalas.pessoa} IS NULL OR ${escalas.pessoa} = '')`
+          ))
+          .orderBy(desc(escalas.data))
+          .limit(input.limit)
+          .offset(input.offset);
+
+        return results;
+      }),
+
+    /**
      * Get weekly trends for a run
      */
     getWeeklyTrends: protectedProcedure
@@ -1489,6 +1522,121 @@ Para cada escolhido, dê uma justificativa simulando que você analisou: "Dispon
         const trendAnalysis = analyzeTrend(input.pessoa, weeklyData, input.weeksToPredict);
 
         return trendAnalysis;
+      }),
+  }),
+
+  roster: router({
+    /**
+     * Get roster data for weekly planning view
+     */
+    getRosterData: protectedProcedure
+      .input(z.object({
+        runId: z.number(),
+        nivel: z.string().optional(),
+        semanaIso: z.number().optional(),
+      }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const conditions = [eq(escalas.runId, input.runId)];
+        if (input.nivel) conditions.push(eq(escalas.nivel, input.nivel));
+        if (input.semanaIso) conditions.push(eq(escalas.semanaIso, input.semanaIso));
+
+        const allEscalas = await db
+          .select()
+          .from(escalas)
+          .where(and(...conditions))
+          .orderBy(escalas.pessoa, escalas.data);
+
+        // Group by person and collect all dates
+        const rosterMap = new Map<string, any>();
+        const uniqueDates = new Set<string>();
+
+        for (const e of allEscalas) {
+          const dateStr = e.data.toISOString().split('T')[0];
+          uniqueDates.add(dateStr);
+
+          if (!rosterMap.has(e.pessoa)) {
+            rosterMap.set(e.pessoa, {
+              nome: e.pessoa,
+              modalidade: e.modalidade || "N/A",
+              nivel: e.nivel || "N/A",
+              base: e.base || "N/A",
+              days: {},
+            });
+          }
+
+          const person = rosterMap.get(e.pessoa)!;
+          const dateStr = e.data.toISOString().split('T')[0];
+          
+          if (!person.days[dateStr]) {
+            person.days[dateStr] = [];
+          }
+
+          let type = 'other';
+          if (e.ehFolga) {
+            const low = (e.tipoItem || "").toLowerCase();
+            if (low.includes('férias') || low.includes('vacation')) {
+              type = 'ferias';
+            } else {
+              type = 'folga';
+            }
+          } else if (e.wo && e.wo.trim() !== "") {
+            type = 'transmission';
+          } else {
+            type = 'program';
+          }
+
+          person.days[dateStr].push({
+            id: e.id,
+            type,
+            label: e.eventoPrograma || e.tipoItem || "Atividade",
+            wo: e.wo,
+          });
+        }
+
+        return {
+          roster: Array.from(rosterMap.values()),
+          dates: Array.from(uniqueDates).sort(),
+        };
+      }),
+
+    /**
+     * Get distinct levels for filtering
+     */
+    getLevels: protectedProcedure
+      .input(z.object({ runId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const result = await db
+          .select({ nivel: escalas.nivel })
+          .from(escalas)
+          .where(and(eq(escalas.runId, input.runId), sql`${escalas.nivel} IS NOT NULL`))
+          .groupBy(escalas.nivel);
+
+        return result.map(r => r.nivel);
+      }),
+
+    /**
+     * Get distinct weeks for filtering
+     */
+    getWeeks: protectedProcedure
+      .input(z.object({ runId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        const result = await db
+          .select({ semana: escalas.semanaIso })
+          .from(escalas)
+          .where(eq(escalas.runId, input.runId))
+          .groupBy(escalas.semanaIso)
+          .orderBy(escalas.semanaIso);
+
+        return result.map(r => r.semana);
       }),
   }),
 });

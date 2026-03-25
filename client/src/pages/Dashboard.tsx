@@ -75,6 +75,12 @@ export default function Dashboard() {
               <Button variant="outline" onClick={() => setLocation(`/deslocamento/${runId}`)}>
                 Ver Riscos de Deslocamento
               </Button>
+              <Button variant="outline" onClick={() => setLocation(`/wos-sem-elenco/${runId}`)}>
+                Ver WOs sem Elenco
+              </Button>
+              <Button className="bg-[#0f172a] text-white hover:bg-[#1e293b]" onClick={() => setLocation(`/roster-planning/${runId}`)}>
+                Planejamento de Folgas
+              </Button>
             </div>
           </div>
         </div>
@@ -171,7 +177,10 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card 
+            className="cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={() => setLocation(`/wos-sem-elenco/${runId}`)}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">WOs sem Elenco</CardTitle>
               <FileQuestion className="h-4 w-4 text-gray-600" />

@@ -188,6 +188,9 @@ export async function saveEscalas(runId: number, escalasData: ProcessedEscala[])
     mes: e.mes,
     semanaIso: e.semanaIso,
     diaSemana: e.diaSemana,
+    nivel: e.nivel,
+    base: e.base,
+    modalidade: e.modalidade,
   }));
 
   const result = await db.insert(escalas).values(values);

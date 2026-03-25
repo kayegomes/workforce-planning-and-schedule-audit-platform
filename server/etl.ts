@@ -24,6 +24,9 @@ export interface RawAtividade {
   Cidade?: string;
   UF?: string;
   'Status Aprov.'?: string;
+  Modalidade?: string;
+  'NÍVEL'?: string;
+  BASE?: string;
 }
 
 export interface RawEvento {
@@ -104,6 +107,9 @@ export interface ProcessedEscala {
   mes: number;
   semanaIso: number;
   diaSemana: string;
+  nivel: string | null;
+  base: string | null;
+  modalidade: string | null;
 }
 
 /**
@@ -314,6 +320,9 @@ export function processAtividades(rawData: RawAtividade[]): ProcessedEscala[] {
         mes: data.getMonth() + 1,
         semanaIso: getISOWeek(data),
         diaSemana: getDayOfWeekName(data),
+        nivel: row['NÍVEL']?.trim() || null,
+        base: row.BASE?.trim() || null,
+        modalidade: row.Modalidade?.trim() || null,
       });
     } catch (error) {
       // Skip problematic rows

@@ -78,6 +78,9 @@ export const escalas = mysqlTable("escalas", {
   mes: int("mes"),
   semanaIso: int("semanaIso"),
   diaSemana: varchar("diaSemana", { length: 20 }),
+  nivel: varchar("nivel", { length: 50 }),
+  base: varchar("base", { length: 50 }),
+  modalidade: varchar("modalidade", { length: 100 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   runIdIdx: index("runId_idx").on(table.runId),
