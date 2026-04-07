@@ -311,6 +311,9 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   const apiUrl = resolveApiUrl();
   console.log(`[LLM] Invoking API at: ${apiUrl}`);
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
   try {
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -319,7 +322,10 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
         authorization: `Bearer ${ENV.forgeApiKey}`,
       },
       body: JSON.stringify(payload),
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
