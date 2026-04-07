@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, index } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal, boolean, index, longtext } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -25,10 +25,10 @@ export const runs = mysqlTable("runs", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   status: mysqlEnum("status", ["pending", "processing", "completed", "failed"]).default("pending").notNull(),
-  file2468Key: text("file2468Key"), // S3 key for 2468 file
-  file2020Key: text("file2020Key"), // S3 key for 2020 file
-  file2468Url: text("file2468Url"), // S3 URL for 2468 file
-  file2020Url: text("file2020Url"), // S3 URL for 2020 file
+  file2468Key: longtext("file2468Key"), // S3 key for 2468 file
+  file2020Key: longtext("file2020Key"), // S3 key for 2020 file
+  file2468Url: longtext("file2468Url"), // S3 URL for 2468 file
+  file2020Url: longtext("file2020Url"), // S3 URL for 2020 file
   totalEscalas: int("totalEscalas").default(0),
   totalEventos: int("totalEventos").default(0),
   totalAtividades: int("totalAtividades").default(0),
