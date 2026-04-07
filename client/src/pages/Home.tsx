@@ -8,7 +8,6 @@ import { Upload, FileSpreadsheet, Loader2, CheckCircle2, Calendar, History as Hi
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { getLoginUrl } from "@/const";
 
 export default function Home() {
   const { user, loading, isAuthenticated } = useAuth();
@@ -96,23 +95,6 @@ export default function Home() {
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Plataforma de Planejamento de Escalas</CardTitle>
-            <CardDescription>Faça login para acessar o sistema</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button asChild className="w-full" size="lg">
-              <a href={getLoginUrl()}>Entrar</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">

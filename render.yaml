@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: plataforma-planejamento
+    runtime: node
+    buildCommand: pnpm install --no-frozen-lockfile && pnpm run build && pnpm run db:push
+    startCommand: pnpm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: VITE_APP_ID
+        value: "dummy"
+      - key: OAUTH_SERVER_URL
+        value: "dummy"
