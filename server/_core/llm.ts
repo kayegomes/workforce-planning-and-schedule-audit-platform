@@ -209,14 +209,19 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const resolveApiUrl = () =>
-  ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
-    : "https://forge.manus.im/v1/chat/completions";
+const resolveApiUrl = () => {
+  if (ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0) {
+    const url = ENV.forgeApiUrl.trim().replace(/\/$/, "");
+    if (url.endsWith('/chat/completions')) return url;
+    return `${url}/v1/chat/completions`;
+  }
+  // Default to Google Gemini's public OpenAI-compatible endpoint
+  return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+};
 
 const assertApiKey = () => {
   if (!ENV.forgeApiKey) {
-    throw new Error("BUILT_IN_FORGE_API_KEY is not configured in environment variables");
+    throw new Error("No API Key configured. Please set GEMINI_API_KEY or OPENAI_API_KEY in your environment variables.");
   }
 };
 
