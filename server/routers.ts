@@ -1564,7 +1564,6 @@ Para cada escolhido, dê uma justificativa simulando que você analisou: "Dispon
           }
 
           const person = rosterMap.get(e.pessoa)!;
-          const dateStr = e.data.toISOString().split('T')[0];
           
           if (!person.days[dateStr]) {
             person.days[dateStr] = [];
