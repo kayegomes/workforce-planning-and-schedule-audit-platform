@@ -280,7 +280,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   } = params;
 
   const payload: Record<string, unknown> = {
-    model: "gemini-2.5-flash",
+    model: "gemini-1.5-flash",
     messages: messages.map(normalizeMessage),
   };
 
@@ -311,9 +311,6 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   const apiUrl = resolveApiUrl();
   console.log(`[LLM] Invoking API at: ${apiUrl}`);
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
-
   try {
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -321,11 +318,8 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
         "content-type": "application/json",
         authorization: `Bearer ${ENV.forgeApiKey}`,
       },
-      body: JSON.stringify(payload),
-      signal: controller.signal
+      body: JSON.stringify(payload)
     });
-
-    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
