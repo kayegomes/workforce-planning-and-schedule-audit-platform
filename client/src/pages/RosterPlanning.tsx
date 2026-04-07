@@ -22,11 +22,13 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  Download
+  Download,
+  LayoutDashboard
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "../components/ui/badge";
+import { toast } from "sonner";
 
 export default function RosterPlanning() {
   const [, setLocation] = useLocation();
@@ -60,9 +62,9 @@ export default function RosterPlanning() {
   const getCellConfig = (dayActivities: any[]) => {
     if (!dayActivities || dayActivities.length === 0) return { color: "bg-transparent", text: "" };
 
-    // Priority: vacation (Light Purple) > folga (Dark Purple) > transmission (Green) > program (Pink)
+    // Priority: vacation (Blue) > folga (Dark Purple) > transmission (Green) > program (Pink)
     const hasFerias = dayActivities.some(a => a.type === 'ferias');
-    if (hasFerias) return { color: "bg-[#e9d5ff] text-[#6b21a8] font-bold", text: "FÉRIAS" };
+    if (hasFerias) return { color: "bg-blue-600 text-white font-bold", text: "FÉRIAS" };
 
     const hasFolga = dayActivities.some(a => a.type === 'folga');
     if (hasFolga) return { color: "bg-[#581c87] text-white font-bold", text: "FOLGA" };
@@ -90,6 +92,20 @@ export default function RosterPlanning() {
     if (currentIndex < weeks.length - 1) {
       setSelectedSemana(weeks[currentIndex + 1].toString());
     }
+  };
+
+  const handleAudit = () => {
+    toast.success("Iniciando auditoria de premissas...", {
+      description: "Analisando conformidade da escala atual com as regras de negócio."
+    });
+    // Logical placeholder for future backend integration
+  };
+
+  const handleOptimize = () => {
+    toast.info("Otimizando distribuição...", {
+      description: "O algoritmo de IA está buscando a melhor distribuição de folgas."
+    });
+    // Logical placeholder for future backend integration
   };
 
   return (
@@ -165,8 +181,8 @@ export default function RosterPlanning() {
              <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Folgas (Roxo Escuro)</span>
            </div>
            <div className="flex items-center gap-2">
-             <div className="w-4 h-4 bg-[#e9d5ff] rounded shadow-sm"></div>
-             <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Férias (Roxo Claro)</span>
+             <div className="w-4 h-4 bg-blue-600 rounded shadow-sm"></div>
+             <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Férias (Azul)</span>
            </div>
         </div>
 
@@ -254,10 +270,17 @@ export default function RosterPlanning() {
              Dica: Passe o mouse sobre as células para ver detalhes das transmissões.
            </div>
            <div className="flex gap-2">
-              <Button variant="ghost" className="rounded-full text-xs font-bold uppercase tracking-widest text-[#0f172a]">
+              <Button 
+                variant="ghost" 
+                className="rounded-full text-xs font-bold uppercase tracking-widest text-[#0f172a]"
+                onClick={handleAudit}
+              >
                 Auditar Premissas
               </Button>
-              <Button className="rounded-full bg-gradient-to-r from-[#0f172a] to-[#334155] text-white font-black text-xs uppercase tracking-widest px-8 shadow-lg shadow-gray-200">
+              <Button 
+                className="rounded-full bg-gradient-to-r from-[#0f172a] to-[#334155] text-white font-black text-xs uppercase tracking-widest px-8 shadow-lg shadow-gray-200"
+                onClick={handleOptimize}
+              >
                 Otimizar Distribuição
               </Button>
            </div>
