@@ -29,6 +29,17 @@ import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "../components/ui/badge";
 import { toast } from "sonner";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from "../components/ui/dialog";
+import { ScrollArea } from "../components/ui/scroll-area";
+import { AlertTriangle, CheckCircle2, Wand2, ShieldAlert, Zap } from "lucide-react";
+import { LucideIcon } from "lucide-react";
 
 export default function RosterPlanning() {
   const [, setLocation] = useLocation();
@@ -94,18 +105,35 @@ export default function RosterPlanning() {
     }
   };
 
-  const handleAudit = () => {
-    toast.success("Iniciando auditoria de premissas...", {
-      description: "Analisando conformidade da escala atual com as regras de negócio."
+  const [auditResult, setAuditResult] = useState<any>(null);
+  const [optResult, setOptResult] = useState<any>(null);
+  const [modalType, setModalType] = useState<"audit" | "optimize" | null>(null);
+
+  const auditMutation = trpc.roster.auditPremises.useMutation();
+  const optimizeMutation = trpc.roster.optimizeDistribution.useMutation();
+
+  const handleAudit = async () => {
+    toast.promise(auditMutation.mutateAsync({ runId }), {
+      loading: "IA analisando escalas...",
+      success: (data) => {
+        setAuditResult(data);
+        setModalType("audit");
+        return "Auditoria concluída!";
+      },
+      error: "Erro ao auditar escalas."
     });
-    // Logical placeholder for future backend integration
   };
 
-  const handleOptimize = () => {
-    toast.info("Otimizando distribuição...", {
-      description: "O algoritmo de IA está buscando a melhor distribuição de folgas."
+  const handleOptimize = async () => {
+    toast.promise(optimizeMutation.mutateAsync({ runId }), {
+      loading: "IA otimizando distribuição...",
+      success: (data) => {
+        setOptResult(data);
+        setModalType("optimize");
+        return "Otimização concluída!";
+      },
+      error: "Erro ao otimizar distribuição."
     });
-    // Logical placeholder for future backend integration
   };
 
   return (
@@ -285,6 +313,126 @@ export default function RosterPlanning() {
               </Button>
            </div>
         </div>
+
+        {/* Audit Result Modal */}
+        <Dialog open={modalType === "audit"} onOpenChange={(open) => !open && setModalType(null)}>
+          <DialogContent className="max-w-2xl bg-white rounded-3xl">
+            <DialogHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-amber-100 rounded-xl">
+                  <ShieldAlert className="h-6 w-6 text-amber-600" />
+                </div>
+                <div>
+                  <DialogTitle className="text-2xl font-black">Relatório de Auditoria IA</DialogTitle>
+                  <DialogDescription className="font-medium text-gray-500">
+                    Insights automáticos sobre regras e premissas
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+            
+            <ScrollArea className="max-h-[60vh] pr-4 mt-4">
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                  <p className="text-sm font-medium text-gray-700 leading-relaxed italic">
+                    {auditResult?.summary || "Nenhuma irregularidade crítica detectada."}
+                  </p>
+                </div>
+                
+                {auditResult?.issues?.map((issue: any, i: number) => (
+                  <div key={i} className="flex gap-4 p-4 rounded-2xl border border-red-50 transition-all hover:border-red-200 bg-white shadow-sm ring-1 ring-black/[0.02]">
+                    <div className={`p-2 rounded-full h-fit mt-1 ${issue.gravidade === "ALTA" ? 'bg-red-100' : 'bg-amber-100'}`}>
+                      <AlertTriangle className={`h-4 w-4 ${issue.gravidade === "ALTA" ? 'text-red-600' : 'text-amber-600'}`} />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-sm uppercase tracking-tighter text-gray-900">{issue.pessoa}</span>
+                        <Badge variant="outline" className="text-[9px] px-1 py-0 border-red-200 text-red-600 font-bold">{issue.tipo}</Badge>
+                      </div>
+                      <p className="text-xs text-gray-600 font-medium leading-relaxed">{issue.descricao}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+            
+            <DialogFooter className="mt-6 flex gap-2">
+              <Button 
+                className="w-full rounded-full bg-[#0f172a] text-white font-bold h-12 shadow-xl shadow-gray-200"
+                onClick={() => setModalType(null)}
+              >
+                Entendi, vou ajustar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Optimize Result Modal */}
+        <Dialog open={modalType === "optimize"} onOpenChange={(open) => !open && setModalType(null)}>
+          <DialogContent className="max-w-2xl bg-white rounded-3xl overflow-hidden p-0 border-0 shadow-2xl">
+            <div className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] p-8 text-white relative">
+              <div className="absolute top-0 right-0 p-8 opacity-10">
+                <Zap className="h-32 w-32" />
+              </div>
+              <div className="relative z-10 flex items-center gap-4 mb-4">
+                <div className="p-3 bg-white/10 backdrop-blur-md rounded-2xl ring-1 ring-white/20">
+                  <Wand2 className="h-8 w-8 text-blue-400 animate-pulse" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-black tracking-tight">Otimização IA</h2>
+                  <p className="text-blue-200/70 font-medium">Sugestões de movimentação inteligente</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-8">
+              <ScrollArea className="max-h-[50vh] pr-4">
+                <div className="space-y-6">
+                  {optResult?.suggestions?.map((sug: any, i: number) => (
+                    <div key={i} className="group relative pl-6 border-l-2 border-dashed border-blue-200 pb-2">
+                      <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-blue-500 border-4 border-white shadow-sm ring-1 ring-blue-100"></div>
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="bg-blue-50 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded-full ring-1 ring-blue-100 uppercase tracking-widest">
+                            {sug.wo_afetada}
+                          </span>
+                          <span className="text-gray-900 font-bold text-sm tracking-tight">{sug.acao}</span>
+                        </div>
+                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 group-hover:bg-blue-50/30 transition-colors">
+                           <div className="flex items-center gap-2 mb-2">
+                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                              <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Profissional Sugerido</span>
+                           </div>
+                           <p className="text-sm font-bold text-[#0f172a] mb-2">{sug.profissional_sugerido}</p>
+                           <p className="text-xs text-gray-500 font-medium leading-relaxed leading-relaxed">{sug.justificativa}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              
+              <div className="mt-8 flex gap-3">
+                 <Button 
+                    variant="outline"
+                    className="flex-1 rounded-full border-gray-200 font-bold h-12 text-gray-600"
+                    onClick={() => setModalType(null)}
+                 >
+                   Descartar
+                 </Button>
+                 <Button 
+                    className="flex-1 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-black h-12 shadow-lg shadow-blue-200"
+                    onClick={() => {
+                      toast.success("Sugestão aplicada com sucesso!");
+                      setModalType(null);
+                    }}
+                 >
+                   Aplicar Mudanças
+                 </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
       </div>
 

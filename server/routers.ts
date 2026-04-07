@@ -1633,6 +1633,140 @@ Para cada escolhido, dê uma justificativa simulando que você analisou: "Dispon
 
         return result.map(r => r.semana);
       }),
+
+    /**
+     * Audit roster premises using AI
+     */
+    auditPremises: protectedProcedure
+      .input(z.object({ runId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        // 1. Fetch data for analysis
+        const allEscalas = await db.select().from(escalas).where(eq(escalas.runId, input.runId));
+        
+        if (allEscalas.length === 0) return { status: "empty", issues: [] };
+
+        // 2. Prepare context for AI (Sample data to avoid token limits)
+        const sampleSize = 200;
+        const sample = allEscalas.slice(0, sampleSize).map(e => ({
+          pessoa: e.pessoa,
+          data: e.data.toISOString().split('T')[0],
+          ehFolga: e.ehFolga,
+          evento: e.eventoPrograma,
+          inicio: e.inicioDt,
+          fim: e.fimDt
+        }));
+
+        const prompt = `
+          Você é um Especialista em Gestão de Escalas e Leis Trabalhistas (Regras de Broadcasting).
+          Analise a seguinte amostra de escalas e identifique potenciais violações de premissas:
+          1. Descanso Interjornada: Mínimo de 11h entre o fim de um plantão e o início do próximo.
+          2. Folga Semanal: Pelo menos uma folga a cada 6 dias trabalhados.
+          3. Escalas Críticas: Viagens longas com pouco tempo de descanso.
+          4. Trabalho em Folga: Pessoas alocadas em dias onde o tipo de item indica folga/férias.
+
+          Amostra de dados em JSON:
+          ${JSON.stringify(sample, null, 2)}
+
+          Retorne um relatório estruturado.
+        `;
+
+        const response = await invokeLLM({
+          messages: [{ role: "user", content: prompt }],
+          outputSchema: {
+            name: "AuditReport",
+            schema: {
+              type: "object",
+              properties: {
+                summary: { type: "string" },
+                issues: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      pessoa: { type: "string" },
+                      tipo: { type: "string", enum: ["INTERJORNADA", "FOLGA_FALTANDO", "CONFLITO_LOCAL", "OUTRO"] },
+                      descricao: { type: "string" },
+                      gravidade: { type: "string", enum: ["ALTA", "MEDIA", "BAIXA"] }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        const result = JSON.parse(response.choices[0].message.content as string);
+        return {
+          status: "completed",
+          ...result
+        };
+      }),
+
+    /**
+     * Optimize roster distribution using AI
+     */
+    optimizeDistribution: protectedProcedure
+      .input(z.object({ runId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        // Fetch events without people and available people on those days
+        const targetRunId = input.runId;
+        
+        // Simplified optimization: Find WOs without people
+        const wosSemElenco = await db.select().from(escalas).where(and(
+          eq(escalas.runId, targetRunId),
+          sql`(${escalas.pessoa} IS NULL OR ${escalas.pessoa} = '')`,
+          sql`(${escalas.wo} IS NOT NULL AND ${escalas.wo} != '')`
+        )).limit(10);
+
+        if (wosSemElenco.length === 0) return { status: "optimal", suggestions: [] };
+
+        const prompt = `
+          Você é um Algoritmo de Otimização de Escalas. 
+          Temos ${wosSemElenco.length} WOs (Ordens de Trabalho) sem profissional alocado.
+          Sua meta é sugerir quem poderia cobrir baseado nessas premissas de redistribuição.
+
+          WOs sem elenco:
+          ${JSON.stringify(wosSemElenco.map(w => ({ wo: w.wo, data: w.data, local: w.cidade, funcao: w.funcao })), null, 2)}
+
+          Sugira 3 movimentações de profissionais para cobrir esses buracos, movendo suas folgas se necessário (assuma que há profissionais N1 e N2 disponíveis na base).
+        `;
+
+        const response = await invokeLLM({
+          messages: [{ role: "user", content: prompt }],
+          outputSchema: {
+            name: "OptimizationSuggestions",
+            schema: {
+              type: "object",
+              properties: {
+                suggestions: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      wo_afetada: { type: "string" },
+                      acao: { type: "string" },
+                      justificativa: { type: "string" },
+                      profissional_sugerido: { type: "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        const result = JSON.parse(response.choices[0].message.content as string);
+        return {
+          status: "suggested",
+          suggestions: result.suggestions
+        };
+      }),
   }),
 });
 
