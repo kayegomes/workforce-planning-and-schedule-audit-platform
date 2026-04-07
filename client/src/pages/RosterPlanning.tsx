@@ -120,7 +120,9 @@ export default function RosterPlanning() {
         setModalType("audit");
         return "Auditoria concluída!";
       },
-      error: "Erro ao auditar escalas."
+      error: (err) => {
+        return `Erro: ${err.message || "Não foi possível auditar."}`;
+      }
     });
   };
 
@@ -132,7 +134,9 @@ export default function RosterPlanning() {
         setModalType("optimize");
         return "Otimização concluída!";
       },
-      error: "Erro ao otimizar distribuição."
+      error: (err) => {
+        return `Erro: ${err.message || "Não foi possível otimizar."}`;
+      }
     });
   };
 
