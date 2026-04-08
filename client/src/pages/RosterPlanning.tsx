@@ -393,9 +393,13 @@ export default function RosterPlanning() {
               <ScrollArea className="max-h-[50vh] pr-4">
                 <div className="space-y-6">
                   {optResult?.suggestions?.length === 0 && (
-                    <div className="p-4 bg-red-50 text-red-800 rounded-lg border border-red-200 font-mono text-xs overflow-auto">
-                      <p className="font-bold mb-2">[DEBUG IA] Payload Inválido Detectado:</p>
-                      <pre>{JSON.stringify(optResult, null, 2)}</pre>
+                    <div className="p-6 bg-blue-50 rounded-2xl border border-blue-100 flex items-center gap-4">
+                      <div className="p-2 bg-blue-100 rounded-full">
+                        <CheckCircle2 className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <p className="text-blue-800 font-bold text-sm">
+                        Nenhuma sugestão de movimentação necessária. A distribuição da escala está totalmente otimizada!
+                      </p>
                     </div>
                   )}
                   {optResult?.suggestions?.map((sug: any, i: number) => (
