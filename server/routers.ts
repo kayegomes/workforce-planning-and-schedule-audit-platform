@@ -840,7 +840,8 @@ Para cada escolhido, dê uma justificativa simulando que você analisou: "Dispon
         
         const rawSugestoes = (mlOutputRaw.sugestoes && mlOutputRaw.sugestoes.length > 0) 
             ? mlOutputRaw.sugestoes 
-            : mlOutputRaw.recomendacao_resolucao?.substitutos_recomendados 
+            : mlOutputRaw.recomendacoes
+            || mlOutputRaw.recomendacao_resolucao?.substitutos_recomendados 
             || mlOutputRaw.suggestions || mlOutputRaw.substitutos || mlOutputRaw.substitutes || [];
 
         const sugestoes = rawSugestoes.map((s: any) => ({
@@ -849,7 +850,7 @@ Para cada escolhido, dê uma justificativa simulando que você analisou: "Dispon
           explicacaoML: s.explicacaoML || s.explicacao_ml || s.justificativa || s.explicacao || JSON.stringify(s)
         }));
 
-        const eventoAlvo = mlOutputRaw.eventoAlvo || mlOutputRaw.recomendacao_resolucao?.acao || "Recomendação Genérica";
+        const eventoAlvo = mlOutputRaw.eventoAlvo || mlOutputRaw.evento_afetado || mlOutputRaw.recomendacao_resolucao?.acao || mlOutputRaw.decisao_logica || "Recomendação Genérica";
 
         const mlOutput = { ...mlOutputRaw, sugestoes, eventoAlvo };
         return {
