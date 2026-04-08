@@ -814,7 +814,9 @@ Para cada escolhido, dê uma justificativa simulando que você analisou: "Dispon
           }
         });
 
-        const mlOutput = JSON.parse(response.choices[0].message.content as string);
+        const content = response.choices[0].message.content as string;
+        const jsonMatch = content.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+        const mlOutput = JSON.parse(jsonMatch ? jsonMatch[0] : content);
         return {
           status: "Success",
           data: mlOutput,
@@ -1698,7 +1700,9 @@ Para cada escolhido, dê uma justificativa simulando que você analisou: "Dispon
           }
         });
 
-        const result = JSON.parse(response.choices[0].message.content as string);
+        const content = response.choices[0].message.content as string;
+        const jsonMatch = content.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+        const result = JSON.parse(jsonMatch ? jsonMatch[0] : content);
         return {
           status: "completed",
           ...result
@@ -1761,7 +1765,9 @@ Para cada escolhido, dê uma justificativa simulando que você analisou: "Dispon
           }
         });
 
-        const result = JSON.parse(response.choices[0].message.content as string);
+        const content = response.choices[0].message.content as string;
+        const jsonMatch = content.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+        const result = JSON.parse(jsonMatch ? jsonMatch[0] : content);
         return {
           status: "suggested",
           suggestions: result.suggestions
