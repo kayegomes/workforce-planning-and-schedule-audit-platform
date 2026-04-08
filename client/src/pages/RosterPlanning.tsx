@@ -392,6 +392,12 @@ export default function RosterPlanning() {
             <div className="p-8">
               <ScrollArea className="max-h-[50vh] pr-4">
                 <div className="space-y-6">
+                  {optResult?.suggestions?.length === 0 && (
+                    <div className="p-4 bg-red-50 text-red-800 rounded-lg border border-red-200 font-mono text-xs overflow-auto">
+                      <p className="font-bold mb-2">[DEBUG IA] Payload Inválido Detectado:</p>
+                      <pre>{JSON.stringify(optResult, null, 2)}</pre>
+                    </div>
+                  )}
                   {optResult?.suggestions?.map((sug: any, i: number) => (
                     <div key={i} className="group relative pl-6 border-l-2 border-dashed border-blue-200 pb-2">
                       <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-blue-500 border-4 border-white shadow-sm ring-1 ring-blue-100"></div>
