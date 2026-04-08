@@ -24,6 +24,20 @@ import { runs, escalas, alertasConflito, alertasFolga, alertasDeslocamento, aler
 import { eq, desc, and, sql, not, inArray } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm";
 
+function parseLLMResponse(content: string, schemaName: string): any {
+  const jsonMatch = content.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+  try {
+    let result = JSON.parse(jsonMatch ? jsonMatch[0] : content);
+    if (result[schemaName]) return result[schemaName];
+    if (Object.keys(result).length === 1 && typeof Object.values(result)[0] === "object" && !Array.isArray(Object.values(result)[0])) {
+      return Object.values(result)[0];
+    }
+    return result;
+  } catch (e) {
+    return {};
+  }
+}
+
 export const appRouter = router({
   system: systemRouter,
   
@@ -815,8 +829,9 @@ Para cada escolhido, dê uma justificativa simulando que você analisou: "Dispon
         });
 
         const content = response.choices[0].message.content as string;
-        const jsonMatch = content.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-        const mlOutput = JSON.parse(jsonMatch ? jsonMatch[0] : content);
+        const mlOutputRaw = parseLLMResponse(content, "SuggestedSubstitutions");
+        const sugestoes = mlOutputRaw.sugestoes || mlOutputRaw.suggestions || mlOutputRaw.substitutos || mlOutputRaw.substitutes || [];
+        const mlOutput = { ...mlOutputRaw, sugestoes };
         return {
           status: "Success",
           data: mlOutput,
@@ -1701,8 +1716,9 @@ Para cada escolhido, dê uma justificativa simulando que você analisou: "Dispon
         });
 
         const content = response.choices[0].message.content as string;
-        const jsonMatch = content.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-        const result = JSON.parse(jsonMatch ? jsonMatch[0] : content);
+        const resultRaw = parseLLMResponse(content, "AuditReport");
+        const issues = resultRaw.issues || resultRaw.problemas || resultRaw.violation || [];
+        const result = { ...resultRaw, issues };
         return {
           status: "completed",
           ...result
@@ -1766,8 +1782,9 @@ Para cada escolhido, dê uma justificativa simulando que você analisou: "Dispon
         });
 
         const content = response.choices[0].message.content as string;
-        const jsonMatch = content.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-        const result = JSON.parse(jsonMatch ? jsonMatch[0] : content);
+        const resultRaw = parseLLMResponse(content, "OptimizationSuggestions");
+        const suggestions = resultRaw.suggestions || resultRaw.sugestoes || [];
+        const result = { ...resultRaw, suggestions };
         return {
           status: "suggested",
           suggestions: result.suggestions
