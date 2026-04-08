@@ -27,14 +27,20 @@ import { invokeLLM } from "./_core/llm";
 function parseLLMResponse(content: string | null | undefined, schemaName: string): any {
   if (!content) return {};
   const jsonMatch = content.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+  const rawJSON = jsonMatch ? jsonMatch[0] : content;
+  
+  // Basic cleanup for common LLM hallucinations like trailing commas
+  const cleanedJSON = rawJSON.replace(/,\s*}/g, '}').replace(/,\s*\]/g, ']');
+
   try {
-    let result = JSON.parse(jsonMatch ? jsonMatch[0] : content);
+    let result = JSON.parse(cleanedJSON);
     if (result[schemaName]) return result[schemaName];
     if (Object.keys(result).length === 1 && typeof Object.values(result)[0] === "object" && !Array.isArray(Object.values(result)[0])) {
       return Object.values(result)[0];
     }
     return result;
   } catch (e) {
+    console.error("[LLM Parser Error] Failed to parse JSON:", e, "Raw Content:", content);
     return {};
   }
 }
