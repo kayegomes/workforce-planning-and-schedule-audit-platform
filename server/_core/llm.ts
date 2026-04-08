@@ -311,29 +311,52 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   });
 
   const apiUrl = resolveApiUrl();
-  console.log(`[LLM] Invoking API at: ${apiUrl}`);
+  console.log(`[LLM] Invoking API at: ${apiUrl} for model ${payload.model}`);
 
-  try {
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${ENV.forgeApiKey}`,
-      },
-      body: JSON.stringify(payload)
-    });
+  const MAX_RETRIES = 3;
+  let attempt = 0;
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[LLM] API Error (${response.status}): ${errorText}`);
-      throw new Error(
-        `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`
-      );
+  while (attempt < MAX_RETRIES) {
+    try {
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${ENV.forgeApiKey}`,
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[LLM] API Error (${response.status}) on attempt ${attempt + 1}: ${errorText}`);
+        
+        if ((response.status === 503 || response.status === 429) && attempt < MAX_RETRIES - 1) {
+          const delayStr = response.headers.get("Retry-After") || String(Math.pow(2, attempt) * 2);
+          const delaySecs = parseInt(delayStr, 10);
+          console.log(`[LLM] Retrying in ${delaySecs} seconds...`);
+          await new Promise(r => setTimeout(r, delaySecs * 1000));
+          attempt++;
+          continue;
+        }
+
+        throw new Error(
+          `LLM invoke failed: ${response.status} ${response.statusText} \u2013 ${errorText}`
+        );
+      }
+
+      return (await response.json()) as InvokeResult;
+    } catch (err: any) {
+      if (attempt < MAX_RETRIES - 1 && err.message.includes('fetch failed')) {
+        console.warn(`[LLM] Network failure on attempt ${attempt + 1}, retrying...`);
+        await new Promise(r => setTimeout(r, 2000));
+        attempt++;
+        continue;
+      }
+      console.error(`[LLM] Fetch Exception: ${err.message}`);
+      throw err;
     }
-
-    return (await response.json()) as InvokeResult;
-  } catch (err: any) {
-    console.error(`[LLM] Fetch Exception: ${err.message}`);
-    throw err;
   }
+  
+  throw new Error("LLM invoke failed after max retries.");
 }
