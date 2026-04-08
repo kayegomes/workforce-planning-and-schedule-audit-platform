@@ -278,10 +278,20 @@ export default function RosterPlanning() {
                         </TableCell>
                         <TableCell className="text-center text-xs font-bold text-gray-500 border-r border-gray-100">{person.base}</TableCell>
                         {dates.map(date => {
-                          const config = getCellConfig(person.days[date]);
+                          const activities = person.days[date] || [];
+                          const config = getCellConfig(activities);
+                          const cellTitle = activities.map((a: any) => {
+                            const nome = a.eventoPrograma || a.type;
+                            const detalhe = a.funcao || "";
+                            return detalhe ? `${nome} (${detalhe})` : nome;
+                          }).filter(Boolean).join(" | ");
+                          
                           return (
                             <TableCell key={date} className="p-1 border-r border-gray-50 last:border-r-0">
-                              <div className={`w-full h-14 rounded-xl flex items-center justify-center text-[10px] transition-all hover:scale-[1.03] hover:shadow-lg cursor-pointer ring-1 ring-white/20 select-none ${config.color}`}>
+                              <div 
+                                title={cellTitle}
+                                className={`w-full h-14 rounded-xl flex items-center justify-center text-[10px] transition-all hover:scale-[1.03] hover:shadow-lg cursor-pointer ring-1 ring-white/20 select-none ${config.color}`}
+                              >
                                 {config.text}
                               </div>
                             </TableCell>
