@@ -838,19 +838,43 @@ Para cada escolhido, dê uma justificativa simulando que você analisou: "Dispon
         const content = response.choices[0].message.content as string;
         const mlOutputRaw = parseLLMResponse(content, "SuggestedSubstitutions");
         
-        const rawSugestoes = (mlOutputRaw.sugestoes && mlOutputRaw.sugestoes.length > 0) 
-            ? mlOutputRaw.sugestoes 
-            : mlOutputRaw.recomendacoes
-            || mlOutputRaw.recomendacao_resolucao?.substitutos_recomendados 
-            || mlOutputRaw.suggestions || mlOutputRaw.substitutos || mlOutputRaw.substitutes || [];
+        // Função Recursiva à prova de falhas: busca qualquer array de candidatos não importando o nome que a IA inventou
+        function extrairCandidatosRec(obj: any): any[] | null {
+          if (Array.isArray(obj) && obj.length > 0 && typeof obj[0] === 'object') return obj;
+          if (obj && typeof obj === 'object') {
+            for (const key of Object.keys(obj)) {
+              if (key === 'sugestoes' && Array.isArray(obj[key]) && obj[key].length === 0) continue;
+              const found = extrairCandidatosRec(obj[key]);
+              if (found) return found;
+            }
+          }
+          return null;
+        }
+
+        // Função Recursiva para buscar a ação do evento
+        function extrairAcaoRec(obj: any): string | null {
+          const chavesAlvo = ["acao_proposta", "acao", "evento_afetado", "decisao_logica", "eventoAlvo"];
+          if (obj && typeof obj === 'object') {
+            for (const k of chavesAlvo) { if (obj[k] && typeof obj[k] === 'string' && obj[k] !== "Recomendação Genérica") return obj[k]; }
+            for (const key of Object.keys(obj)) {
+              if (typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
+                const found = extrairAcaoRec(obj[key]);
+                if (found) return found;
+              }
+            }
+          }
+          return null;
+        }
+
+        const rawSugestoes = extrairCandidatosRec(mlOutputRaw) || [];
 
         const sugestoes = rawSugestoes.map((s: any) => ({
-          nome: s.nome || s.name || "Recomendado",
+          nome: s.nome || s.name || s.candidato || "Recomendado",
           scoreModelo: s.scoreModelo || s.score_modelo || s.score || 95,
           explicacaoML: s.explicacaoML || s.explicacao_ml || s.justificativa || s.explicacao || JSON.stringify(s)
         }));
 
-        const eventoAlvo = mlOutputRaw.eventoAlvo || mlOutputRaw.evento_afetado || mlOutputRaw.recomendacao_resolucao?.acao || mlOutputRaw.decisao_logica || "Recomendação Genérica";
+        const eventoAlvo = extrairAcaoRec(mlOutputRaw) || "Recomendação Analisada pela IA";
 
         const mlOutput = { ...mlOutputRaw, sugestoes, eventoAlvo };
         return {
