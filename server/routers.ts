@@ -837,8 +837,21 @@ Para cada escolhido, dê uma justificativa simulando que você analisou: "Dispon
 
         const content = response.choices[0].message.content as string;
         const mlOutputRaw = parseLLMResponse(content, "SuggestedSubstitutions");
-        const sugestoes = mlOutputRaw.sugestoes || mlOutputRaw.suggestions || mlOutputRaw.substitutos || mlOutputRaw.substitutes || [];
-        const mlOutput = { ...mlOutputRaw, sugestoes };
+        
+        const rawSugestoes = (mlOutputRaw.sugestoes && mlOutputRaw.sugestoes.length > 0) 
+            ? mlOutputRaw.sugestoes 
+            : mlOutputRaw.recomendacao_resolucao?.substitutos_recomendados 
+            || mlOutputRaw.suggestions || mlOutputRaw.substitutos || mlOutputRaw.substitutes || [];
+
+        const sugestoes = rawSugestoes.map((s: any) => ({
+          nome: s.nome || s.name || "Recomendado",
+          scoreModelo: s.scoreModelo || s.score_modelo || s.score || 95,
+          explicacaoML: s.explicacaoML || s.explicacao_ml || s.justificativa || s.explicacao || JSON.stringify(s)
+        }));
+
+        const eventoAlvo = mlOutputRaw.eventoAlvo || mlOutputRaw.recomendacao_resolucao?.acao || "Recomendação Genérica";
+
+        const mlOutput = { ...mlOutputRaw, sugestoes, eventoAlvo };
         return {
           status: "Success",
           data: mlOutput,
