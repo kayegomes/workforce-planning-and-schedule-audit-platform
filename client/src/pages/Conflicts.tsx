@@ -160,17 +160,24 @@ export default function Conflicts() {
                     <div className="space-y-4">
                       <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Top 3 Substitutos</h4>
                       
-                      {aiSuggestion.data?.sugestoes?.map((sugestao: any, i: number) => (
-                        <div key={i} className="bg-white border rounded-lg p-4 shadow-sm hover:shadow transition-shadow">
-                          <div className="flex justify-between items-start mb-2">
-                            <h5 className="font-bold text-gray-900 text-lg">{sugestao.nome}</h5>
-                            <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                              Match: {sugestao.scoreModelo}%
-                            </span>
+                      {aiSuggestion.data?.sugestoes?.length > 0 ? (
+                        aiSuggestion.data?.sugestoes?.map((sugestao: any, i: number) => (
+                          <div key={i} className="bg-white border rounded-lg p-4 shadow-sm hover:shadow transition-shadow">
+                            <div className="flex justify-between items-start mb-2">
+                              <h5 className="font-bold text-gray-900 text-lg">{sugestao.nome || sugestao.name || "Sem Nome"}</h5>
+                              <span className="inline-flex items-center gap-1 bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                                Match: {sugestao.scoreModelo || sugestao.score_modelo || "??"}%
+                              </span>
+                            </div>
+                            <p className="text-gray-600 text-sm leading-relaxed">{sugestao.explicacaoML || sugestao.explicacao_ml || JSON.stringify(sugestao)}</p>
                           </div>
-                          <p className="text-gray-600 text-sm leading-relaxed">{sugestao.explicacaoML}</p>
+                        ))
+                      ) : (
+                        <div className="bg-red-50 text-red-800 p-4 border border-red-200 rounded-md font-mono text-xs w-full overflow-x-auto whitespace-pre-wrap">
+                          <strong>[DEBUG IA] Payload Inválido Detectado:</strong><br/>
+                          {JSON.stringify(aiSuggestion.data, null, 2)}
                         </div>
-                      ))}
+                      )}
                     </div>
                   </>
                 )}
