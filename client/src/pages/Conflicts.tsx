@@ -160,7 +160,7 @@ export default function Conflicts() {
                     <div className="space-y-4">
                       <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Top 3 Substitutos</h4>
                       
-                      {aiSuggestion.data?.sugestoes.map((sugestao: any, i: number) => (
+                      {aiSuggestion.data?.sugestoes?.map((sugestao: any, i: number) => (
                         <div key={i} className="bg-white border rounded-lg p-4 shadow-sm hover:shadow transition-shadow">
                           <div className="flex justify-between items-start mb-2">
                             <h5 className="font-bold text-gray-900 text-lg">{sugestao.nome}</h5>
