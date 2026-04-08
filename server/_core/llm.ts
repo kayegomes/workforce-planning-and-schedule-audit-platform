@@ -334,6 +334,15 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
         if ((response.status === 503 || response.status === 429) && attempt < MAX_RETRIES - 1) {
           const delayStr = response.headers.get("Retry-After") || String(Math.pow(2, attempt) * 2);
           const delaySecs = parseInt(delayStr, 10);
+          console.log(`[LLM] Request throttling. Suggested delay: ${delaySecs}s.`);
+          if (delaySecs > 15) {
+             console.warn(`[LLM] Delay > 15s. Failing fast to prevent Render HTTP timeout.`);
+             throw new Error(
+               response.status === 429 
+                 ? "O Google limitou o número de requisições dessa inteligência no plano gratuito. Por favor, aguarde cerca de 1 minuto antes de tentar novamente." 
+                 : "Os servidores do Google AI estão superlotados. Por favor, tente novamente em alguns instantes."
+             );
+          }
           console.log(`[LLM] Retrying in ${delaySecs} seconds...`);
           await new Promise(r => setTimeout(r, delaySecs * 1000));
           attempt++;

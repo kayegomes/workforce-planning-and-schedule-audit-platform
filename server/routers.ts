@@ -24,7 +24,8 @@ import { runs, escalas, alertasConflito, alertasFolga, alertasDeslocamento, aler
 import { eq, desc, and, sql, not, inArray } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm";
 
-function parseLLMResponse(content: string, schemaName: string): any {
+function parseLLMResponse(content: string | null | undefined, schemaName: string): any {
+  if (!content) return {};
   const jsonMatch = content.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
   try {
     let result = JSON.parse(jsonMatch ? jsonMatch[0] : content);
