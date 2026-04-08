@@ -45,6 +45,19 @@ function parseLLMResponse(content: string | null | undefined, schemaName: string
   }
 }
 
+// Global DFS to extract array of objects irrespective of hallucinated property names
+function extrairArrayDeObjetosRec(obj: any): any[] | null {
+  if (Array.isArray(obj) && obj.length > 0 && typeof obj[0] === 'object') return obj;
+  if (obj && typeof obj === 'object') {
+    for (const key of Object.keys(obj)) {
+      if ((key === 'sugestoes' || key === 'issues' || key === 'suggestions') && Array.isArray(obj[key]) && obj[key].length === 0) continue;
+      const found = extrairArrayDeObjetosRec(obj[key]);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 export const appRouter = router({
   system: systemRouter,
   
@@ -837,21 +850,8 @@ Para cada escolhido, dê uma justificativa simulando que você analisou: "Dispon
 
         const content = response.choices[0].message.content as string;
         const mlOutputRaw = parseLLMResponse(content, "SuggestedSubstitutions");
-        
-        // Função Recursiva à prova de falhas: busca qualquer array de candidatos não importando o nome que a IA inventou
-        function extrairCandidatosRec(obj: any): any[] | null {
-          if (Array.isArray(obj) && obj.length > 0 && typeof obj[0] === 'object') return obj;
-          if (obj && typeof obj === 'object') {
-            for (const key of Object.keys(obj)) {
-              if (key === 'sugestoes' && Array.isArray(obj[key]) && obj[key].length === 0) continue;
-              const found = extrairCandidatosRec(obj[key]);
-              if (found) return found;
-            }
-          }
-          return null;
-        }
 
-        // Função Recursiva para buscar a ação do evento
+        // Função Recursiva localizada para buscar a ação do evento
         function extrairAcaoRec(obj: any): string | null {
           const chavesAlvo = ["acao_proposta", "acao", "evento_afetado", "decisao_logica", "eventoAlvo"];
           if (obj && typeof obj === 'object') {
@@ -866,7 +866,7 @@ Para cada escolhido, dê uma justificativa simulando que você analisou: "Dispon
           return null;
         }
 
-        const rawSugestoes = extrairCandidatosRec(mlOutputRaw) || [];
+        const rawSugestoes = extrairArrayDeObjetosRec(mlOutputRaw) || [];
 
         const sugestoes = rawSugestoes.map((s: any) => ({
           nome: s.nome || s.name || s.candidato || "Recomendado",
@@ -1762,7 +1762,13 @@ Para cada escolhido, dê uma justificativa simulando que você analisou: "Dispon
 
         const content = response.choices[0].message.content as string;
         const resultRaw = parseLLMResponse(content, "AuditReport");
-        const issues = resultRaw.issues || resultRaw.problemas || resultRaw.violation || [];
+        const issuesRaw = extrairArrayDeObjetosRec(resultRaw) || [];
+        const issues = issuesRaw.map((i: any) => ({
+            pessoa: i.pessoa || i.nome || i.profissional || "Não especificado",
+            tipo: i.tipo || i.categoria || i.type || "OUTRO",
+            descricao: i.descricao || i.description || i.detalhe || JSON.stringify(i),
+            gravidade: i.gravidade || i.severidade || i.severity || "MEDIA"
+        }));
         const result = { ...resultRaw, issues };
         return {
           status: "completed",
@@ -1828,7 +1834,13 @@ Para cada escolhido, dê uma justificativa simulando que você analisou: "Dispon
 
         const content = response.choices[0].message.content as string;
         const resultRaw = parseLLMResponse(content, "OptimizationSuggestions");
-        const suggestions = resultRaw.suggestions || resultRaw.sugestoes || [];
+        const suggestionsRaw = extrairArrayDeObjetosRec(resultRaw) || [];
+        const suggestions = suggestionsRaw.map((s: any) => ({
+            wo_afetada: s.wo_afetada || s.wo || s.evento || "WO",
+            acao: s.acao || s.action || s.movimento || "Ação não detalhada",
+            justificativa: s.justificativa || s.explicacao || JSON.stringify(s),
+            profissional_sugerido: s.profissional_sugerido || s.profissional || s.nome || "Não definido"
+        }));
         const result = { ...resultRaw, suggestions };
         return {
           status: "suggested",
